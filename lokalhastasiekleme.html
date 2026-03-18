@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lokal Anestezi Hasta Ekleme</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary: #ff2288;
+            --primary-light: #ff4d9e;
+            --primary-dark: #d91b6f;
+            --secondary: #387ef0;
+            --secondary-light: #5c9bff;
+            --accent: #1cc88a;
+            --accent-light: #34d399;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --light: #f8fafc;
+            --dark: #1e293b;
+            --gray: #94a3b8;
+            --white: #ffffff;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.03);
+            --radius: 12px;
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1e1e1e, #2d2d30);
+            color: var(--white);
+            font-size: 15px;
+            line-height: 1.6;
+            padding: 5px 20px;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .vertical-title {
+            position: fixed;
+            bottom: 5px;
+            left: 20px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            font-size: 24px;
+            font-weight: 600;
+            background: linear-gradient(45deg, #ff2288, #387ef0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            z-index: 1000;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(255, 34, 136, 0.3);
+        }
+        
+        .vertical-title i {
+            display: inline-block;
+            transform: rotate(90deg);
+            margin-left: 8px;
+        }
+        
+        .container {
+            max-width: 98%;
+            margin: 0 auto;
+            background: rgba(23, 23, 23, 0.9);
+            padding: 15px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.5s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 20% 80%;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .form-section {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: none;
+            transition: var(--transition);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .form-section:hover {
+            transform: none;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .section-title {
+            font-size: 16px;
+            color: var(--primary);
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 34, 136, 0.2);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title i {
+            color: var(--secondary);
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 12px;
+            position: relative;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+            color: #e0e0e0;
+            font-size: 13px;
+        }
+        
+        .required-label::after {
+            content: ' *';
+            color: var(--danger);
+            font-weight: bold;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--white);
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(255, 34, 136, 0.15);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .diagnosis-categories {
+            margin-top: 15px;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .diagnosis-categories::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .diagnosis-categories::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+        
+        .diagnosis-categories::-webkit-scrollbar-thumb {
+            background: rgba(255, 34, 136, 0.5);
+            border-radius: 3px;
+        }
+        
+        .category-group {
+            background: transparent;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .category-header {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--secondary-light);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(56, 126, 240, 0.2);
+        }
+        
+        .category-header i {
+            font-size: 11px;
+        }
+        
+        .category-header:hover {
+            color: var(--primary);
+        }
+        
+        .category-header i {
+            font-size: 14px;
+            transition: transform 0.3s ease;
+        }
+        
+        .category-group.collapsed .category-header i {
+            transform: rotate(-90deg);
+        }
+        
+        .subcategory {
+            margin-top: 4px;
+            padding-left: 0;
+        }
+        
+        .subcategory-title {
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--gray);
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            opacity: 0.7;
+        }
+        
+        .subcategory-title i {
+            font-size: 4px;
+        }
+        
+        .diagnosis-tags {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .category-content {
+            max-height: none;
+            overflow: visible;
+            transition: max-height 0.3s ease;
+        }
+        
+        .category-group.collapsed .category-content {
+            max-height: 0;
+            overflow: hidden;
+        }
+        
+        .tag-btn {
+            background: transparent;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 7px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: var(--transition);
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 5px;
+            text-align: left;
+            width: 100%;
+        }
+        
+        .tag-btn i {
+            font-size: 9px;
+            color: var(--gray);
+            opacity: 0.5;
+        }
+        
+        .tag-btn:hover {
+            background: rgba(56, 126, 240, 0.15);
+            color: var(--white);
+        }
+        
+        .tag-btn:hover i {
+            color: var(--secondary-light);
+            opacity: 1;
+        }
+        
+        .tag-btn.selected {
+            background: rgba(255, 34, 136, 0.2);
+            color: var(--white);
+            animation: pulse 0.3s;
+        }
+        
+        .tag-btn.selected i {
+            color: var(--primary);
+            opacity: 1;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .btn-container {
+            margin-top: 25px;
+            text-align: center;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            font-size: 12px;
+            box-shadow: var(--shadow-light);
+            min-width: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .btn i {
+            font-size: 11px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: var(--white);
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 34, 136, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #1cc88a 0%, #17a673 100%);
+            color: var(--white);
+        }
+        
+        .btn-success:hover {
+            background: linear-gradient(135deg, #17a673 0%, #138f60 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(28, 200, 138, 0.3);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #f87171 0%, var(--danger) 100%);
+            color: var(--white);
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2);
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, #36b9cc 0%, #2c9faf 100%);
+            color: var(--white);
+            font-size: 11px;
+            padding: 6px 12px;
+            min-width: auto;
+        }
+        
+        .btn-info:hover {
+            background: linear-gradient(135deg, #2c9faf 0%, #258391 100%);
+            transform: translateY(-1px);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: var(--white);
+            font-size: 11px;
+            padding: 6px 12px;
+            min-width: auto;
+        }
+        
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            color: var(--white);
+            font-size: 11px;
+            padding: 6px 12px;
+            min-width: auto;
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+            transform: translateY(-1px);
+        }
+        
+        .quick-note-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: 8px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            animation: fadeIn 0.5s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow-light);
+        }
+        
+        .alert-success {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--accent-light);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .alert i {
+            font-size: 18px;
+        }
+        
+        .input-hint {
+            font-size: 11px;
+            color: var(--gray);
+            margin-top: 4px;
+            display: block;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-dialog {
+            background: rgba(23, 23, 23, 0.95);
+            border-radius: 8px;
+            padding: 12px;
+            max-width: 95%;
+            width: 95%;
+            max-height: 95vh;
+            height: 95vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 34, 136, 0.2);
+        }
+
+        .modal-title {
+            font-size: 1.1em;
+            color: #ff2288;
+            font-weight: bold;
+        }
+
+        .btn-close {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .btn-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            margin-bottom: 12px;
+        }
+
+        .iframe-container {
+            width: 100%;
+            height: calc(95vh - 100px);
+            border: none;
+            border-radius: 4px;
+            background: white;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @media screen and (max-width: 1600px) {
+            .diagnosis-categories {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        
+        @media screen and (max-width: 1400px) {
+            .diagnosis-categories {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        @media screen and (max-width: 1200px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .container {
+                max-width: 95%;
+            }
+            
+            .diagnosis-categories {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .btn {
+                min-width: 140px;
+                padding: 10px 16px;
+            }
+            
+            .diagnosis-categories {
+                grid-template-columns: repeat(2, 1fr);
+                max-height: 400px;
+            }
+            
+            .vertical-title {
+                font-size: 18px;
+            }
+        }
+        
+        @media screen and (max-width: 576px) {
+            .btn-container {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .diagnosis-categories {
+                grid-template-columns: 1fr;
+            }
+            
+            .vertical-title {
+                font-size: 16px;
+                bottom: 10px;
+                left: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="vertical-title">
+        <i class="fas fa-user-plus"></i> LOKAL ANESTEZİ HASTA EKLEME
+    </div>
+
+    <div class="container">
+        <div id="alert-box" class="hidden"></div>
+        
+        <form id="patient-form">
+            <div class="form-grid">
+                <div class="form-section">
+                    <h2 class="section-title"><i class="fas fa-clipboard-check"></i> Temel Bilgiler</h2>
+                    
+                    <div class="form-group">
+                        <label for="protokol" class="required-label">Protokol No</label>
+                        <input type="text" id="protokol" name="protokol" class="form-control" readonly required style="background: rgba(255, 255, 255, 0.02); cursor: not-allowed;" tabindex="-1">
+                        <span class="input-hint">Protokol numarası otomatik olarak atanacaktır</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="adsoyad" class="required-label">Adı Soyadı</label>
+                        <input type="text" id="adsoyad" name="adsoyad" class="form-control" required tabindex="1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="telefon" class="required-label">Telefon Numarası</label>
+                        <input type="tel" id="telefon" name="telefon" class="form-control" placeholder="05XX XXX XX XX" required tabindex="2">
+                        <span class="input-hint">Örnek: 05XX XXX XX XX formatında giriniz</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="not" class="required-label">Hasta Notu</label>
+                        <textarea id="not" name="not" class="form-control" required tabindex="3"></textarea>
+                        
+                        <div class="quick-note-buttons">
+                            <button type="button" class="btn btn-info btn-sm" onclick="addQuickNote('Uyumlu Hasta')" tabindex="-1">
+                                <i class="fas fa-user-check"></i> Uyumlu Hasta
+                            </button>
+                            <button type="button" class="btn btn-info btn-sm" onclick="addQuickNote('Uyumsuz Hasta')" tabindex="-1">
+                                <i class="fas fa-user-times"></i> Uyumsuz Hasta
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="addQuickNote('Personel / Personel Yakını')" tabindex="-1">
+                                <i class="fas fa-user-tie"></i> Personel / Personel Yakını
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="addQuickNote('Öncelikli Hasta')" tabindex="-1">
+                                <i class="fas fa-star"></i> Öncelikli Hasta
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="addQuickNote('Acil Hasta')" tabindex="-1">
+                                <i class="fas fa-ambulance"></i> Acil Hasta
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="addQuickNote('Enfekte Hasta Hepatit B\'si Var')" tabindex="-1">
+                                <i class="fas fa-virus"></i> Enfekte Hasta Hepatit B'si Var
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="addQuickNote('Enfekte Hasta Hepatit C\'si Var')" tabindex="-1">
+                                <i class="fas fa-disease"></i> Enfekte Hasta Hepatit C'si Var
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="addQuickNote('Enfekte Hasta HIV\'i Var')" tabindex="-1">
+                                <i class="fas fa-exclamation-triangle"></i> Enfekte Hasta HIV'i Var
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h2 class="section-title"><i class="fas fa-notes-medical"></i> Tanı Bilgileri</h2>
+                    
+                    <div class="form-group">
+                        <label for="tani" class="required-label">Tanısı</label>
+                        <div style="display: flex; gap: 8px; align-items: flex-start;">
+                            <input type="text" id="tani" name="tani" class="form-control" required style="flex: 1;" tabindex="4">
+                            <button type="submit" class="btn btn-primary" style="margin-top: 0; white-space: nowrap;" tabindex="5">
+                                <i class="fas fa-save"></i> Hastayı Kaydet
+                            </button>
+                            <button type="button" class="btn btn-success" id="save-with-appointment-btn" style="margin-top: 0; white-space: nowrap;" tabindex="6">
+                                <i class="fas fa-calendar-plus"></i> Randevulu Kaydet
+                            </button>
+                            <button type="reset" class="btn btn-danger" style="margin-top: 0; white-space: nowrap;" tabindex="7">
+                                <i class="fas fa-times"></i> Formu Temizle
+                            </button>
+                        </div>
+                    </div>
+                
+                    <div class="diagnosis-categories">
+                        <!-- YARA VE SKAR -->
+                        <div class="category-group">
+                            <div class="category-header" onclick="toggleCategory(this)">
+                                <i class="fas fa-chevron-down"></i>
+                                <i class="fas fa-band-aid"></i> YARA VE SKAR
+                            </div>
+                            <div class="category-content">
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Keloid</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Subkutan lipom')"><i class="fas fa-plus"></i> Subkutan lipom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('İnter-müsküler lipom')"><i class="fas fa-plus"></i> İnter-müsküler lipom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Anjiyolipom')"><i class="fas fa-plus"></i> Anjiyolipom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Fibrolipom')"><i class="fas fa-plus"></i> Fibrolipom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Spindle-cell lipom')"><i class="fas fa-plus"></i> Spindle-cell lipom</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Nörofibrom</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Soliter nörofibrom')"><i class="fas fa-plus"></i> Soliter nörofibrom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Pleksiform nörofibrom')"><i class="fas fa-plus"></i> Pleksiform nörofibrom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Deri altı nörofibrom')"><i class="fas fa-plus"></i> Deri altı nörofibrom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Nörofibromatozis tip 1 ilişkili')"><i class="fas fa-plus"></i> Nörofibromatozis tip 1 ilişkili</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Hemanjiyom</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Kapiller hemanjiyom')"><i class="fas fa-plus"></i> Kapiller hemanjiyom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Kavernöz hemanjiyom')"><i class="fas fa-plus"></i> Kavernöz hemanjiyom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Venöz malformasyon')"><i class="fas fa-plus"></i> Venöz malformasyon</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('İnfantil hemanjiyom')"><i class="fas fa-plus"></i> İnfantil hemanjiyom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Lobüler kapiller hemanjiyom (Pyogenic Granuloma)')"><i class="fas fa-plus"></i> Lobüler kapiller hemanjiyom</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Sebase Kist (Epidermal kist)</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('İnflame sebase kist')"><i class="fas fa-plus"></i> İnflame sebase kist</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('İnfekte sebase kist')"><i class="fas fa-plus"></i> İnfekte sebase kist</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Dev sebase kist')"><i class="fas fa-plus"></i> Dev sebase kist</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Çoklu sebase kist')"><i class="fas fa-plus"></i> Çoklu sebase kist</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Dermoid Kist</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Yüz dermoid kisti')"><i class="fas fa-plus"></i> Yüz dermoid kisti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Orbital dermoid')"><i class="fas fa-plus"></i> Orbital dermoid</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Nazal dermoid')"><i class="fas fa-plus"></i> Nazal dermoid</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Sakrokoksigeal dermoid')"><i class="fas fa-plus"></i> Sakrokoksigeal dermoid</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Fibrom</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Sert fibrom (Fibroma durum)')"><i class="fas fa-plus"></i> Sert fibrom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Yumuşak fibrom')"><i class="fas fa-plus"></i> Yumuşak fibrom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Oral fibrom')"><i class="fas fa-plus"></i> Oral fibrom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Travmatik fibrom')"><i class="fas fa-plus"></i> Travmatik fibrom</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Dermatofibrom</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Pigmente dermatofibrom')"><i class="fas fa-plus"></i> Pigmente dermatofibrom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Sklerozan dermatofibrom')"><i class="fas fa-plus"></i> Sklerozan dermatofibrom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Anjiyomatoid dermatofibrom')"><i class="fas fa-plus"></i> Anjiyomatoid dermatofibrom</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- EPİDERMAL -->
+                        <div class="category-group">
+                            <div class="category-header" onclick="toggleCategory(this)">
+                                <i class="fas fa-chevron-down"></i>
+                                <i class="fas fa-sun"></i> EPİDERMAL
+                            </div>
+                            <div class="category-content">
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Seboreik Keratoz</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Pigmente tip seboreik keratoz')"><i class="fas fa-plus"></i> Pigmente tip</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('İrrite seboreik keratoz')"><i class="fas fa-plus"></i> İrrite seboreik keratoz</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Düz tip seboreik keratoz')"><i class="fas fa-plus"></i> Düz tip</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Papillomatöz tip seboreik keratoz')"><i class="fas fa-plus"></i> Papillomatöz tip</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Aktinik Keratoz</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Hiperkeratotik tip aktinik keratoz')"><i class="fas fa-plus"></i> Hiperkeratotik tip</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Eritematöz tip aktinik keratoz')"><i class="fas fa-plus"></i> Eritematöz tip</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Pigmente tip aktinik keratoz')"><i class="fas fa-plus"></i> Pigmente tip</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Lichenoid tip aktinik keratoz')"><i class="fas fa-plus"></i> Lichenoid tip</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Deri Etiketi (Akrokordon)</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Boyun akrokordonu')"><i class="fas fa-plus"></i> Boyun akrokordonu</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Aksiller akrokordon')"><i class="fas fa-plus"></i> Aksiller akrokordon</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Göz kapağı akrokordonu')"><i class="fas fa-plus"></i> Göz kapağı akrokordonu</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Çoklu deri etiketi')"><i class="fas fa-plus"></i> Çoklu deri etiketi</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Epidermal Kist</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Yüz epidermal kisti')"><i class="fas fa-plus"></i> Yüz epidermal kisti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Skrotal epidermal kist')"><i class="fas fa-plus"></i> Skrotal epidermal kist</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Meme çevresi kist')"><i class="fas fa-plus"></i> Meme çevresi kist</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Sırt epidermal kisti')"><i class="fas fa-plus"></i> Sırt epidermal kisti</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PİGMENTE LEZYONLAR -->
+                        <div class="category-group">
+                            <div class="category-header" onclick="toggleCategory(this)">
+                                <i class="fas fa-chevron-down"></i>
+                                <i class="fas fa-palette"></i> PİGMENTE LEZYONLAR
+                            </div>
+                            <div class="category-content">
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Melanositik Nevüs</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('İntradermal nevüs')"><i class="fas fa-plus"></i> İntradermal nevüs</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Junctional nevüs')"><i class="fas fa-plus"></i> Junctional nevüs</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Compound nevüs')"><i class="fas fa-plus"></i> Compound nevüs</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Mavi nevüs')"><i class="fas fa-plus"></i> Mavi nevüs</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Nevüs (Doğumsal / Edinsel)</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Doğumsal dev nevüs')"><i class="fas fa-plus"></i> Doğumsal dev nevüs</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Edinsel nevüs')"><i class="fas fa-plus"></i> Edinsel nevüs</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Halo nevüs')"><i class="fas fa-plus"></i> Halo nevüs</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Spitz nevüs')"><i class="fas fa-plus"></i> Spitz nevüs</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Displastik Nevüs</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Hafif displazi nevüs')"><i class="fas fa-plus"></i> Hafif displazi</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Orta displazi nevüs')"><i class="fas fa-plus"></i> Orta displazi</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Şiddetli displazi nevüs')"><i class="fas fa-plus"></i> Şiddetli displazi</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Doğumsal Nevüs</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Küçük doğumsal nevüs (<1,5 cm)')"><i class="fas fa-plus"></i> Küçük doğumsal nevüs</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Orta doğumsal nevüs (1,5–20 cm)')"><i class="fas fa-plus"></i> Orta doğumsal nevüs</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Dev doğumsal nevüs (>20 cm)')"><i class="fas fa-plus"></i> Dev doğumsal nevüs</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MALİGN LEZYONLAR -->
+                        <div class="category-group">
+                            <div class="category-header" onclick="toggleCategory(this)">
+                                <i class="fas fa-chevron-down"></i>
+                                <i class="fas fa-exclamation-triangle"></i> MALİGN LEZYONLAR
+                            </div>
+                            <div class="category-content">
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Bazal Hücreli Karsinom (BCC)</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Nodüler tip BCC')"><i class="fas fa-plus"></i> Nodüler tip</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Yüzeyel tip BCC')"><i class="fas fa-plus"></i> Yüzeyel tip</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Morfeaform tip BCC')"><i class="fas fa-plus"></i> Morfeaform tip</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Pigmente tip BCC')"><i class="fas fa-plus"></i> Pigmente tip</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Rekürren BCC')"><i class="fas fa-plus"></i> Rekürren BCC</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Skuamöz Hücreli Karsinom (SCC)</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('İn situ SCC (Bowen hastalığı)')"><i class="fas fa-plus"></i> İn situ (Bowen)</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('İnvaziv SCC')"><i class="fas fa-plus"></i> İnvaziv SCC</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Verrüköz SCC')"><i class="fas fa-plus"></i> Verrüköz SCC</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Diferansiye SCC')"><i class="fas fa-plus"></i> Diferansiye SCC</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Melanom</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Superfisiyal yayılan melanom')"><i class="fas fa-plus"></i> Superfisiyal yayılan melanom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Nodüler melanom')"><i class="fas fa-plus"></i> Nodüler melanom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Lentigo maligna melanom')"><i class="fas fa-plus"></i> Lentigo maligna melanom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Akral lentijinöz melanom')"><i class="fas fa-plus"></i> Akral lentijinöz melanom</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Amelanotik melanom')"><i class="fas fa-plus"></i> Amelanotik melanom</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Kaposi Sarkomu</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Klasik Kaposi')"><i class="fas fa-plus"></i> Klasik Kaposi</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('İmmünsupresif Kaposi (post-transplant)')"><i class="fas fa-plus"></i> İmmünsupresif Kaposi</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Epidemik Kaposi (AIDS ilişkili)')"><i class="fas fa-plus"></i> Epidemik Kaposi</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Sebase Karsinom</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Göz kapağı sebase karsinomu')"><i class="fas fa-plus"></i> Göz kapağı sebase karsinomu</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Deri sebase karsinomu')"><i class="fas fa-plus"></i> Deri sebase karsinomu</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Nadir yerleşimli sebase karsinom')"><i class="fas fa-plus"></i> Nadir yerleşimli sebase karsinom</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DİĞER -->
+                        <div class="category-group">
+                            <div class="category-header" onclick="toggleCategory(this)">
+                                <i class="fas fa-chevron-down"></i>
+                                <i class="fas fa-ellipsis-h"></i> DİĞER
+                            </div>
+                            <div class="category-content">
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Pilonidal Sinüs</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Akut pilonidal abse')"><i class="fas fa-plus"></i> Akut pilonidal abse</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Kronik pilonidal sinüs')"><i class="fas fa-plus"></i> Kronik pilonidal sinüs</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Nüks pilonidal sinüs')"><i class="fas fa-plus"></i> Nüks pilonidal sinüs</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Siğil (Verruka)</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Verruka vulgaris')"><i class="fas fa-plus"></i> Verruka vulgaris</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Verruka plantaris')"><i class="fas fa-plus"></i> Verruka plantaris</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Verruka plana')"><i class="fas fa-plus"></i> Verruka plana</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Genital verruka (Kondiloma aküminata)')"><i class="fas fa-plus"></i> Genital verruka</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Batmış Tırnak</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Hafif evre batık tırnak')"><i class="fas fa-plus"></i> Hafif evre batık tırnak</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('İltihaplı batık tırnak')"><i class="fas fa-plus"></i> İltihaplı batık tırnak</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Granülasyonlu batık tırnak')"><i class="fas fa-plus"></i> Granülasyonlu batık tırnak</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Nüks batık tırnak')"><i class="fas fa-plus"></i> Nüks batık tırnak</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Abse</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Cilt altı abse')"><i class="fas fa-plus"></i> Cilt altı abse</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Apse drenaj sonrası yara')"><i class="fas fa-plus"></i> Apse drenaj sonrası yara</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Kıl kökü apsesi (Furonkül)')"><i class="fas fa-plus"></i> Kıl kökü apsesi</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Karbunkül')"><i class="fas fa-plus"></i> Karbunkül</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Yumuşak doku apsesi')"><i class="fas fa-plus"></i> Yumuşak doku apsesi</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Randevu Takvimi Modal -->
+    <div class="modal" id="appointmentCalendarModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h5 class="modal-title">Randevu Takvimi</h5>
+                <button type="button" class="btn-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <iframe id="appointment-iframe" class="iframe-container" src=""></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCuMD2_NTb42XTrC_TvRPNCzQ__D7-ZDBY",
+  authDomain: "gcdbaaa.firebaseapp.com",
+  databaseURL: "https://gcdbaaa-default-rtdb.firebaseio.com",
+  projectId: "gcdbaaa",
+  storageBucket: "gcdbaaa.firebasestorage.app",
+  messagingSenderId: "740142411040",
+  appId: "1:740142411040:web:3535938c5a34d23e503b45",
+  measurementId: "G-N69CEGVF0Y"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+function addQuickNote(note) {
+    const notInput = document.getElementById('not');
+    if (notInput.value.trim() === '') {
+        notInput.value = note;
+    } else {
+        if (!notInput.value.includes(note)) {
+            notInput.value += '\n' + note;
+        }
+    }
+    
+    event.target.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        event.target.style.transform = 'scale(1)';
+    }, 150);
+}
+
+function toggleCategory(element) {
+    const categoryGroup = element.parentElement;
+    categoryGroup.classList.toggle('collapsed');
+}
+
+function addDiagnosis(diagnosis) {
+    const taniInput = document.getElementById('tani');
+    if (taniInput.value === '') {
+        taniInput.value = diagnosis;
+    } else {
+        if (!taniInput.value.includes(diagnosis)) {
+            taniInput.value += ', ' + diagnosis;
+        }
+    }
+    
+    event.target.classList.add('selected');
+    setTimeout(() => event.target.classList.remove('selected'), 500);
+}
+
+function formatPhoneNumber(phone) {
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 11) {
+        return cleaned.replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4');
+    }
+    return phone;
+}
+
+function openModal() {
+    document.getElementById('appointmentCalendarModal').classList.add('show');
+}
+
+function closeModal() {
+    document.getElementById('appointmentCalendarModal').classList.remove('show');
+    document.getElementById('appointment-iframe').src = '';
+}
+
+async function savePatient(openAppointment = false) {
+    const protokol = document.getElementById('protokol').value.trim();
+    const adsoyad = document.getElementById('adsoyad').value.trim();
+    const telefon = document.getElementById('telefon').value.trim();
+    const tani = document.getElementById('tani').value.trim();
+    const not = document.getElementById('not').value.trim();
+    
+    if (!protokol || !adsoyad || !telefon || !tani || !not) {
+        showAlert('<i class="fas fa-exclamation-circle"></i> Lütfen tüm zorunlu alanları doldurun.', 'danger');
+        return null;
+    }
+    
+    showAlert('<i class="fas fa-spinner fa-spin"></i> Hasta kaydediliyor...', 'success');
+    
+    try {
+        const counterRef = db.collection('counters').doc('lokalPatientCounter');
+        
+        const result = await db.runTransaction(async (transaction) => {
+            const counterDoc = await transaction.get(counterRef);
+            
+            let nextNumber;
+            if (!counterDoc.exists) {
+                nextNumber = 10417;
+                transaction.set(counterRef, { value: nextNumber + 1 });
+            } else {
+                nextNumber = counterDoc.data().value || 10417;
+                transaction.update(counterRef, { value: nextNumber + 1 });
+            }
+            
+            return nextNumber;
+        });
+        
+        const patientData = {
+            protokol: result.toString(),
+            adsoyad: adsoyad,
+            telefon: formatPhoneNumber(telefon),
+            tani: tani,
+            not: not,
+            randevutarihi: "",
+            tarihsaat: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        const docRef = await db.collection('lokalhastalari').add(patientData);
+        
+        showAlert('<i class="fas fa-check-circle"></i> Hasta başarıyla kaydedildi! Protokol No: ' + result, 'success');
+        
+        if (openAppointment) {
+            await db.collection("randevutakvimi2").doc("randevutakvimi2").set({
+                protokol: result.toString(),
+                adsoyad: adsoyad,
+                tani: tani,
+                telefon: formatPhoneNumber(telefon),
+                not: not,
+                tarihsaat: firebase.firestore.FieldValue.serverTimestamp(),
+                transferDate: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            
+            showAlert('<i class="fas fa-check-circle"></i> Hasta bilgileri randevu takvimine aktarıldı!', 'success');
+            
+            document.getElementById('appointment-iframe').src = 'randevutakvimi2.html';
+            openModal();
+        } else {
+            resetForm();
+            await loadNextProtocolNumber();
+        }
+        
+        return docRef.id;
+    } catch (error) {
+        console.error("Hata oluştu: ", error);
+        showAlert('<i class="fas fa-exclamation-triangle"></i> Hasta kaydedilirken bir hata oluştu: ' + error.message, 'danger');
+        return null;
+    }
+}
+
+document.getElementById('patient-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    await savePatient(false);
+});
+
+document.getElementById('save-with-appointment-btn').addEventListener('click', async function(e) {
+    e.preventDefault();
+    await savePatient(true);
+});
+
+document.querySelector('button[type="reset"]').addEventListener('click', function(e) {
+    e.preventDefault();
+    resetForm();
+});
+
+function resetForm() {
+    document.getElementById('patient-form').reset();
+    
+    document.querySelectorAll('.tag-btn.selected').forEach(button => {
+        button.classList.remove('selected');
+    });
+    
+    showAlert('<i class="fas fa-check-circle"></i> Form temizlendi, hazır durumdadır.', 'success');
+}
+
+function showAlert(message, type) {
+    const alertBox = document.getElementById('alert-box');
+    alertBox.className = `alert alert-${type}`;
+    alertBox.innerHTML = message;
+    alertBox.classList.remove('hidden');
+    
+    setTimeout(() => {
+        alertBox.classList.add('hidden');
+    }, 5000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadNextProtocolNumber();
+});
+
+async function loadNextProtocolNumber() {
+    try {
+        const counterRef = db.collection('counters').doc('lokalPatientCounter');
+        const counterDoc = await counterRef.get();
+        
+        let nextNumber;
+        if (!counterDoc.exists) {
+            nextNumber = 10417;
+        } else {
+            nextNumber = counterDoc.data().value || 10417;
+        }
+        
+        document.getElementById('protokol').value = nextNumber;
+    } catch (error) {
+        console.error("Protokol numarası yüklenirken hata:", error);
+        showAlert('<i class="fas fa-exclamation-triangle"></i> Protokol numarası yüklenirken hata oluştu.', 'danger');
+    }
+}
+
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('appointmentCalendarModal');
+    if (event.target === modal) {
+        closeModal();
+    }
+});
+    </script>
+</body>
+</html>

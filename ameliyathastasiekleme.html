@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genel Anestezi Hasta Ekleme</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary: #ff2288;
+            --primary-light: #ff4d9e;
+            --primary-dark: #d91b6f;
+            --secondary: #387ef0;
+            --secondary-light: #5c9bff;
+            --accent: #1cc88a;
+            --accent-light: #34d399;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --light: #f8fafc;
+            --dark: #1e293b;
+            --gray: #94a3b8;
+            --white: #ffffff;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            --shadow-light: 0 5px 15px rgba(0, 0, 0, 0.03);
+            --radius: 12px;
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1e1e1e, #2d2d30);
+            color: var(--white);
+            font-size: 15px;
+            line-height: 1.6;
+            padding: 5px 20px;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        /* Dikey Başlık Stili */
+        .vertical-title {
+            position: fixed;
+            bottom: 5px;
+            left: 20px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            transform: rotate(180deg);
+            font-size: 24px;
+            font-weight: 600;
+            background: linear-gradient(45deg, #ff2288, #387ef0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            z-index: 1000;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(255, 34, 136, 0.3);
+        }
+        
+        .vertical-title i {
+            display: inline-block;
+            transform: rotate(90deg);
+            margin-left: 8px;
+        }
+        
+        .container {
+            max-width: 98%;
+            margin: 0 auto;
+            background: rgba(23, 23, 23, 0.9);
+            padding: 15px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.5s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 20% 80%;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .form-section {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: none;
+            transition: var(--transition);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .form-section:hover {
+            transform: none;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .section-title {
+            font-size: 16px;
+            color: var(--primary);
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 34, 136, 0.2);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-title i {
+            color: var(--secondary);
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 12px;
+            position: relative;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+            color: #e0e0e0;
+            font-size: 13px;
+        }
+        
+        .required-label::after {
+            content: ' *';
+            color: var(--danger);
+            font-weight: bold;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--white);
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 3px rgba(255, 34, 136, 0.15);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .diagnosis-categories {
+            margin-top: 15px;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 10px;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .diagnosis-categories::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .diagnosis-categories::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+        
+        .diagnosis-categories::-webkit-scrollbar-thumb {
+            background: rgba(255, 34, 136, 0.5);
+            border-radius: 3px;
+        }
+        
+        .category-group {
+            background: transparent;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .category-header {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--secondary-light);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            user-select: none;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(56, 126, 240, 0.2);
+        }
+        
+        .category-header i {
+            font-size: 11px;
+        }
+        
+        .category-header:hover {
+            color: var(--primary);
+        }
+        
+        .category-header i {
+            font-size: 14px;
+            transition: transform 0.3s ease;
+        }
+        
+        .category-group.collapsed .category-header i {
+            transform: rotate(-90deg);
+        }
+        
+        .subcategory {
+            margin-top: 4px;
+            padding-left: 0;
+        }
+        
+        .subcategory-title {
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--gray);
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            opacity: 0.7;
+        }
+        
+        .subcategory-title i {
+            font-size: 4px;
+        }
+        
+        .diagnosis-tags {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .category-content {
+            max-height: none;
+            overflow: visible;
+            transition: max-height 0.3s ease;
+        }
+        
+        .category-group.collapsed .category-content {
+            max-height: 0;
+            overflow: hidden;
+        }
+        
+        .tag-btn {
+            background: transparent;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 7px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: var(--transition);
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 5px;
+            text-align: left;
+            width: 100%;
+        }
+        
+        .tag-btn i {
+            font-size: 9px;
+            color: var(--gray);
+            opacity: 0.5;
+        }
+        
+        .tag-btn:hover {
+            background: rgba(56, 126, 240, 0.15);
+            color: var(--white);
+        }
+        
+        .tag-btn:hover i {
+            color: var(--secondary-light);
+            opacity: 1;
+        }
+        
+        .tag-btn.selected {
+            background: rgba(255, 34, 136, 0.2);
+            color: var(--white);
+            animation: pulse 0.3s;
+        }
+        
+        .tag-btn.selected i {
+            color: var(--primary);
+            opacity: 1;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .btn-container {
+            margin-top: 25px;
+            text-align: center;
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: var(--transition);
+            font-size: 12px;
+            box-shadow: var(--shadow-light);
+            min-width: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .btn i {
+            font-size: 11px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: var(--white);
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 34, 136, 0.3);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #f87171 0%, var(--danger) 100%);
+            color: var(--white);
+        }
+        
+        .btn-danger:hover {
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2);
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, #36b9cc 0%, #2c9faf 100%);
+            color: var(--white);
+            font-size: 11px;
+            padding: 6px 12px;
+            min-width: auto;
+        }
+        
+        .btn-info:hover {
+            background: linear-gradient(135deg, #2c9faf 0%, #258391 100%);
+            transform: translateY(-1px);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: var(--white);
+            font-size: 11px;
+            padding: 6px 12px;
+            min-width: auto;
+        }
+        
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            color: var(--white);
+            font-size: 11px;
+            padding: 6px 12px;
+            min-width: auto;
+        }
+        
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+            transform: translateY(-1px);
+        }
+        
+        .quick-note-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: 8px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            animation: fadeIn 0.5s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow-light);
+        }
+        
+        .alert-success {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--accent-light);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .alert i {
+            font-size: 18px;
+        }
+        
+        .input-hint {
+            font-size: 11px;
+            color: var(--gray);
+            margin-top: 4px;
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @media screen and (max-width: 1600px) {
+            .diagnosis-categories {
+                grid-template-columns: repeat(5, 1fr);
+            }
+        }
+        
+        @media screen and (max-width: 1400px) {
+            .diagnosis-categories {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        @media screen and (max-width: 1200px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .container {
+                max-width: 95%;
+            }
+            
+            .diagnosis-categories {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media screen and (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .btn {
+                min-width: 140px;
+                padding: 10px 16px;
+            }
+            
+            .diagnosis-categories {
+                grid-template-columns: repeat(2, 1fr);
+                max-height: 400px;
+            }
+            
+            .vertical-title {
+                font-size: 18px;
+            }
+        }
+        
+        @media screen and (max-width: 576px) {
+            .btn-container {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .diagnosis-categories {
+                grid-template-columns: 1fr;
+            }
+            
+            .vertical-title {
+                font-size: 16px;
+                bottom: 10px;
+                left: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Dikey Başlık -->
+    <div class="vertical-title">
+        <i class="fas fa-user-plus"></i> GENEL ANESTEZİ HASTA EKLEME
+    </div>
+
+    <div class="container">
+        <div id="alert-box" class="hidden"></div>
+        
+        <form id="patient-form">
+            <div class="form-grid">
+                <!-- Sol Sütun - Temel Bilgiler -->
+                <div class="form-section">
+                    <h2 class="section-title"><i class="fas fa-clipboard-check"></i> Temel Bilgiler</h2>
+                    
+                    <div class="form-group">
+                        <label for="protokol" class="required-label">Protokol No</label>
+                        <input type="text" id="protokol" name="protokol" class="form-control" readonly required style="background: rgba(255, 255, 255, 0.02); cursor: not-allowed;" tabindex="-1">
+                        <span class="input-hint">Protokol numarası otomatik olarak atanacaktır</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="adsoyad" class="required-label">Adı Soyadı</label>
+                        <input type="text" id="adsoyad" name="adsoyad" class="form-control" required tabindex="1">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="telefon" class="required-label">Telefon Numarası</label>
+                        <input type="tel" id="telefon" name="telefon" class="form-control" placeholder="05XX XXX XX XX" required tabindex="2">
+                        <span class="input-hint">Örnek: 05XX XXX XX XX formatında giriniz</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="not" class="required-label">Hasta Notu</label>
+                        <textarea id="not" name="not" class="form-control" required tabindex="3"></textarea>
+                        
+                        <div class="quick-note-buttons">
+                            <button type="button" class="btn btn-info btn-sm" onclick="addQuickNote('Uyumlu Hasta')" tabindex="-1">
+                                <i class="fas fa-user-check"></i> Uyumlu Hasta
+                            </button>
+                            <button type="button" class="btn btn-info btn-sm" onclick="addQuickNote('Uyumsuz Hasta')" tabindex="-1">
+                                <i class="fas fa-user-times"></i> Uyumsuz Hasta
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="addQuickNote('Personel / Personel Yakını')" tabindex="-1">
+                                <i class="fas fa-user-tie"></i> Personel / Personel Yakını
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="addQuickNote('Öncelikli Hasta')" tabindex="-1">
+                                <i class="fas fa-star"></i> Öncelikli Hasta
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="addQuickNote('Acil Hasta')" tabindex="-1">
+                                <i class="fas fa-ambulance"></i> Acil Hasta
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="addQuickNote('Enfekte Hasta Hepatit B\'si Var')" tabindex="-1">
+                                <i class="fas fa-virus"></i> Enfekte Hasta Hepatit B'si Var
+                            </button>
+                            <button type="button" class="btn btn-warning btn-sm" onclick="addQuickNote('Enfekte Hasta Hepatit C\'si Var')" tabindex="-1">
+                                <i class="fas fa-disease"></i> Enfekte Hasta Hepatit C'si Var
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="addQuickNote('Enfekte Hasta HIV\'i Var')" tabindex="-1">
+                                <i class="fas fa-exclamation-triangle"></i> Enfekte Hasta HIV'i Var
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Sağ Sütun - Tanı Seçimi -->
+                <div class="form-section">
+                    <h2 class="section-title"><i class="fas fa-notes-medical"></i> Tanı Bilgileri</h2>
+                    
+                    <div class="form-group">
+                        <label for="tani" class="required-label">Tanısı</label>
+                        <div style="display: flex; gap: 8px; align-items: flex-start;">
+                            <input type="text" id="tani" name="tani" class="form-control" required style="flex: 1;" tabindex="4">
+                            <button type="submit" class="btn btn-primary" style="margin-top: 0; white-space: nowrap;" tabindex="5"><i class="fas fa-save"></i> Hastayı Kaydet</button>
+                            <button type="reset" class="btn btn-danger" style="margin-top: 0; white-space: nowrap;" tabindex="6"><i class="fas fa-times"></i> Formu Temizle</button>
+                        </div>
+                    </div>
+                    <div class="diagnosis-categories">
+<!-- YÜZ ESTETİĞİ -->
+                        <div class="category-group">
+                            <div class="category-header" onclick="toggleCategory(this)">
+                                <i class="fas fa-chevron-down"></i>
+                                <i class="fas fa-user-md"></i> YÜZ ESTETİĞİ
+                            </div>
+                            <div class="category-content">
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Burun Estetiği</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Rinoplasti (Burun Estetiği)')"><i class="fas fa-plus"></i> Rinoplasti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Revizyon Rinoplasti')"><i class="fas fa-plus"></i> Revizyon Rinoplasti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Mini Rinoplasti')"><i class="fas fa-plus"></i> Mini Rinoplasti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Septorinoplasti')"><i class="fas fa-plus"></i> Septorinoplasti</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Yüz Germe</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Facelift (Yüz Germe)')"><i class="fas fa-plus"></i> Facelift</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Mini Facelift (Orta yüz germe)')"><i class="fas fa-plus"></i> Mini Facelift</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Boyun Germe (Necklift)')"><i class="fas fa-plus"></i> Boyun Germe</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Temporal Lift (Şakak Germe)')"><i class="fas fa-plus"></i> Temporal Lift</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Göz Estetiği</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Blefaroplasti (Göz Kapağı Estetiği)')"><i class="fas fa-plus"></i> Blefaroplasti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Üst Göz Kapağı Blefaroplasti')"><i class="fas fa-plus"></i> Üst Göz Kapağı</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Alt Göz Kapağı Blefaroplasti')"><i class="fas fa-plus"></i> Alt Göz Kapağı</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Kaş Kaldırma (Brow Lift)')"><i class="fas fa-plus"></i> Kaş Kaldırma</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Kulak ve Çene</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Otoplasti (Kepçe Kulak Estetiği)')"><i class="fas fa-plus"></i> Otoplasti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Genioplasti (Çene Ucu Estetiği)')"><i class="fas fa-plus"></i> Genioplasti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Mentoplasti (Çene Ucu Protezi)')"><i class="fas fa-plus"></i> Mentoplasti</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Yüz Hacim ve Dolgu</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Bukkal Yağ Alma (Bichectomy)')"><i class="fas fa-plus"></i> Bukkal Yağ Alma</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Yanak Dolgunlaştırma (Fat Graft / Dolgu)')"><i class="fas fa-plus"></i> Yanak Dolgunlaştırma</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Elmacık Kemiği Protezi (Malar implant)')"><i class="fas fa-plus"></i> Elmacık Protezi</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Nazolabial Dolgu Uygulaması')"><i class="fas fa-plus"></i> Nazolabial Dolgu</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Yüz Yağ Enjeksiyonu (Fat Grafting)')"><i class="fas fa-plus"></i> Yüz Yağ Enjeksiyonu</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Yüz Asma (İp Askı)')"><i class="fas fa-plus"></i> Yüz Asma</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MEME ESTETİĞİ -->
+                        <div class="category-group">
+                            <div class="category-header" onclick="toggleCategory(this)">
+                                <i class="fas fa-chevron-down"></i>
+                                <i class="fas fa-venus"></i> MEME ESTETİĞİ
+                            </div>
+                            <div class="category-content">
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Meme Büyütme ve Küçültme</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Meme Büyütme (Augmentasyon)')"><i class="fas fa-plus"></i> Meme Büyütme</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Meme Küçültme (Redüksiyon)')"><i class="fas fa-plus"></i> Meme Küçültme</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Meme Dikleştirme (Mastopeksi)')"><i class="fas fa-plus"></i> Meme Dikleştirme</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Yağ Enjeksiyonu ile Meme Büyütme')"><i class="fas fa-plus"></i> Yağ Enjeksiyonlu Büyütme</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Meme Rekonstrüksiyonu</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Rekonstrüktif Meme Cerrahisi (Mastektomi sonrası)')"><i class="fas fa-plus"></i> Rekonstrüktif Cerrahi</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Asimetrik Meme Düzeltme')"><i class="fas fa-plus"></i> Asimetrik Meme Düzeltme</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Meme Protezi Değişimi (Revizyon Augmentasyon)')"><i class="fas fa-plus"></i> Protez Değişimi</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Özel Durumlar</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Erkek Meme Küçültme (Jinekomasti)')"><i class="fas fa-plus"></i> Jinekomasti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Tüberöz Meme Düzeltme')"><i class="fas fa-plus"></i> Tüberöz Meme</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Meme Ucu Düzeltme (Nipple Correction)')"><i class="fas fa-plus"></i> Meme Ucu Düzeltme</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Inverted Nipple Onarımı')"><i class="fas fa-plus"></i> Inverted Nipple</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VÜCUT ŞEKİLLENDİRME -->
+                        <div class="category-group">
+                            <div class="category-header" onclick="toggleCategory(this)">
+                                <i class="fas fa-chevron-down"></i>
+                                <i class="fas fa-spa"></i> VÜCUT ŞEKİLLENDİRME
+                            </div>
+                            <div class="category-content">
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Karın Germe</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Abdominoplasti (Karın Germe)')"><i class="fas fa-plus"></i> Abdominoplasti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Mini Abdominoplasti')"><i class="fas fa-plus"></i> Mini Abdominoplasti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Karın Duvarı Onarımı (Rectus Onarımı)')"><i class="fas fa-plus"></i> Karın Duvarı Onarımı</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Göbek Deliği Revizyonu (Umbilikoplasti)')"><i class="fas fa-plus"></i> Göbek Deliği Revizyonu</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Liposuction</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Liposuction (Yağ Alma)')"><i class="fas fa-plus"></i> Liposuction</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('HD Liposuction (Vücut şekillendirme)')"><i class="fas fa-plus"></i> HD Liposuction</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('VASER Liposuction')"><i class="fas fa-plus"></i> VASER Liposuction</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Lazer Lipoliz')"><i class="fas fa-plus"></i> Lazer Lipoliz</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Kalça ve Popo</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('BBL (Brazilian Butt Lift / Yağ Enjeksiyonu ile Popo Büyütme)')"><i class="fas fa-plus"></i> BBL</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Kalça Şekillendirme')"><i class="fas fa-plus"></i> Kalça Şekillendirme</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Yağ Enjeksiyonu (Lipofilling)')"><i class="fas fa-plus"></i> Yağ Enjeksiyonu</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Vücut Germe</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Body Lift (Alt Vücut Germe)')"><i class="fas fa-plus"></i> Body Lift</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Upper Body Lift (Üst Vücut Germe)')"><i class="fas fa-plus"></i> Upper Body Lift</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Kol Germe (Brachioplasti)')"><i class="fas fa-plus"></i> Kol Germe</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Uyluk Germe (Thigh Lift)')"><i class="fas fa-plus"></i> Uyluk Germe</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Sırt Germe (Back Lift)')"><i class="fas fa-plus"></i> Sırt Germe</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Bel Şekillendirme')"><i class="fas fa-plus"></i> Bel Şekillendirme</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ERKEK ESTETİĞİ -->
+                        <div class="category-group">
+                            <div class="category-header" onclick="toggleCategory(this)">
+                                <i class="fas fa-chevron-down"></i>
+                                <i class="fas fa-mars"></i> ERKEK ESTETİĞİ
+                            </div>
+                            <div class="category-content">
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Yüz Estetiği</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Erkek Rinoplasti')"><i class="fas fa-plus"></i> Erkek Rinoplasti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Erkek Blefaroplasti')"><i class="fas fa-plus"></i> Erkek Blefaroplasti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Çene ve Çene Ucu Estetiği')"><i class="fas fa-plus"></i> Çene Estetiği</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Erkek Yüz Germe (Male Facelift)')"><i class="fas fa-plus"></i> Erkek Yüz Germe</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Vücut Estetiği</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Jinekomasti')"><i class="fas fa-plus"></i> Jinekomasti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Erkek Abdominoplasti')"><i class="fas fa-plus"></i> Erkek Abdominoplasti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Erkek Liposuction (Karın, göğüs, bel bölgesi)')"><i class="fas fa-plus"></i> Erkek Liposuction</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Saç Restorasyonu</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Saç Ekimi (FUE / DHI)')"><i class="fas fa-plus"></i> Saç Ekimi</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Sakal Ekimi')"><i class="fas fa-plus"></i> Sakal Ekimi</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Kaş Ekimi')"><i class="fas fa-plus"></i> Kaş Ekimi</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MİNİMAL İNVAZİV -->
+                        <div class="category-group">
+                            <div class="category-header" onclick="toggleCategory(this)">
+                                <i class="fas fa-chevron-down"></i>
+                                <i class="fas fa-syringe"></i> MİNİMAL İNVAZİV
+                            </div>
+                            <div class="category-content">
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Botoks ve Dolgu</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Botoks (Yüz, alın, kaz ayağı, masseter, boyun)')"><i class="fas fa-plus"></i> Botoks</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Dudak Dolgusu')"><i class="fas fa-plus"></i> Dudak Dolgusu</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Göz Altı Işık Dolgusu')"><i class="fas fa-plus"></i> Göz Altı Dolgusu</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Nazolabial Dolgu')"><i class="fas fa-plus"></i> Nazolabial Dolgu</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Jawline Dolgu (Çene hattı belirginleştirme)')"><i class="fas fa-plus"></i> Jawline Dolgu</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Chin Fill (Çene ucu dolgusu)')"><i class="fas fa-plus"></i> Chin Fill</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Cilt Tedavileri</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('PRP (Platelet Rich Plasma)')"><i class="fas fa-plus"></i> PRP</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Mezoterapi (Yüz – Saç – Vücut)')"><i class="fas fa-plus"></i> Mezoterapi</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Dermapen / Microneedling')"><i class="fas fa-plus"></i> Dermapen</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Leke Tedavisi (Peeling / Lazer)')"><i class="fas fa-plus"></i> Leke Tedavisi</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Fraksiyonel Lazer (Cilt gençleştirme)')"><i class="fas fa-plus"></i> Fraksiyonel Lazer</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Karbon Peeling')"><i class="fas fa-plus"></i> Karbon Peeling</button>
+                                    </div>
+                                </div>
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Özel Uygulamalar</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Altın İp Askı')"><i class="fas fa-plus"></i> Altın İp Askı</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Somon DNA Aşısı')"><i class="fas fa-plus"></i> Somon DNA Aşısı</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Cilt Mezolift (Nem aşısı)')"><i class="fas fa-plus"></i> Cilt Mezolift</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Kolajen Aşısı')"><i class="fas fa-plus"></i> Kolajen Aşısı</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- KOMBİNE OPERASYONLAR -->
+                        <div class="category-group">
+                            <div class="category-header" onclick="toggleCategory(this)">
+                                <i class="fas fa-chevron-down"></i>
+                                <i class="fas fa-layer-group"></i> KOMBİNE OPERASYONLAR
+                            </div>
+                            <div class="category-content">
+                                <div class="subcategory">
+                                    <div class="subcategory-title"><i class="fas fa-circle" style="font-size: 6px;"></i> Kombine Cerrahiler</div>
+                                    <div class="diagnosis-tags">
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Meme + Karın Kombine Cerrahisi (Mommy Makeover)')"><i class="fas fa-plus"></i> Mommy Makeover</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Lipo + BBL Kombinasyonu')"><i class="fas fa-plus"></i> Lipo + BBL</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Facelift + Blefaroplasti Kombinasyonu')"><i class="fas fa-plus"></i> Facelift + Blefaroplasti</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Rinoplasti + Çene Protezi Kombinasyonu')"><i class="fas fa-plus"></i> Rinoplasti + Çene Protezi</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('360 Liposuction + Body Lift')"><i class="fas fa-plus"></i> 360 Lipo + Body Lift</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Mini Abdominoplasti + Liposuction')"><i class="fas fa-plus"></i> Mini Abdomino + Lipo</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Meme Revizyon + Yağ Enjeksiyonu')"><i class="fas fa-plus"></i> Meme Revizyon + Yağ</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Full Face Fat Graft + PRP Kombinasyonu')"><i class="fas fa-plus"></i> Fat Graft + PRP</button>
+                                        <button type="button" class="tag-btn" onclick="addDiagnosis('Yüz + Boyun Germe + Kaş Kaldırma Kombine Cerrahisi')"><i class="fas fa-plus"></i> Yüz + Boyun + Kaş</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+    <script>
+// Firebase yapılandırması
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCuMD2_NTb42XTrC_TvRPNCzQ__D7-ZDBY",
+  authDomain: "gcdbaaa.firebaseapp.com",
+  databaseURL: "https://gcdbaaa-default-rtdb.firebaseio.com",
+  projectId: "gcdbaaa",
+  storageBucket: "gcdbaaa.firebasestorage.app",
+  messagingSenderId: "740142411040",
+  appId: "1:740142411040:web:3535938c5a34d23e503b45",
+  measurementId: "G-N69CEGVF0Y"
+};
+
+// Firebase başlatma
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Hızlı not ekleme fonksiyonu
+function addQuickNote(note) {
+    const notInput = document.getElementById('not');
+    if (notInput.value.trim() === '') {
+        notInput.value = note;
+    } else {
+        if (!notInput.value.includes(note)) {
+            notInput.value += '\n' + note;
+        }
+    }
+    
+    // Buton animasyonu
+    event.target.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        event.target.style.transform = 'scale(1)';
+    }, 150);
+}
+
+// Kategori açma/kapama fonksiyonu
+function toggleCategory(element) {
+    const categoryGroup = element.parentElement;
+    categoryGroup.classList.toggle('collapsed');
+}
+
+// Tanı ekleme fonksiyonu
+function addDiagnosis(diagnosis) {
+    const taniInput = document.getElementById('tani');
+    if (taniInput.value === '') {
+        taniInput.value = diagnosis;
+    } else {
+        if (!taniInput.value.includes(diagnosis)) {
+            taniInput.value += ', ' + diagnosis;
+        }
+    }
+    
+    // Buton animasyonu
+    event.target.classList.add('selected');
+    setTimeout(() => event.target.classList.remove('selected'), 500);
+}
+
+// Telefon numarası formatlama
+function formatPhoneNumber(phone) {
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 11) {
+        return cleaned.replace(/(\d{4})(\d{3})(\d{2})(\d{2})/, '$1 $2 $3 $4');
+    }
+    return phone;
+}
+
+// Form gönderme işlemi
+document.getElementById('patient-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Zorunlu alanları kontrol et
+    const protokol = document.getElementById('protokol').value.trim();
+    const adsoyad = document.getElementById('adsoyad').value.trim();
+    const telefon = document.getElementById('telefon').value.trim();
+    const tani = document.getElementById('tani').value.trim();
+    const not = document.getElementById('not').value.trim();
+    
+    if (!protokol || !adsoyad || !telefon || !tani || !not) {
+        showAlert('<i class="fas fa-exclamation-circle"></i> Lütfen tüm zorunlu alanları doldurun.', 'danger');
+        return;
+    }
+    
+    // Kaydetme işlemi için yükleme durumunu göster
+    showAlert('<i class="fas fa-spinner fa-spin"></i> Hasta kaydediliyor...', 'success');
+    
+    try {
+        // Sayaç değerini al veya oluştur - Transaction ile atomik işlem
+        const counterRef = db.collection('counters').doc('lokalPatientCounter');
+        
+        const result = await db.runTransaction(async (transaction) => {
+            const counterDoc = await transaction.get(counterRef);
+            
+            let nextNumber;
+            if (!counterDoc.exists) {
+                // Counter dökümanı yoksa oluştur ve 10417'den başlat
+                nextNumber = 10417;
+                transaction.set(counterRef, { value: nextNumber + 1 });
+            } else {
+                // Varolan counter'ı kullan ve artır
+                nextNumber = counterDoc.data().value || 10417;
+                transaction.update(counterRef, { value: nextNumber + 1 });
+            }
+            
+            return nextNumber;
+        });
+        
+        // Hasta verisini oluştur
+        const patientData = {
+            protokol: result.toString(),
+            adsoyad: adsoyad,
+            telefon: formatPhoneNumber(telefon),
+            tani: tani,
+            not: not,
+            randevutarihi: "",
+            tarihsaat: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        // Hastayı veritabanına ekle
+        await db.collection('ameliyathastalari').add(patientData);
+        
+        showAlert('<i class="fas fa-check-circle"></i> Hasta başarıyla kaydedildi! Protokol No: ' + result, 'success');
+        resetForm();
+        
+        // Yeni protokol numarasını yükle
+        await loadNextProtocolNumber();
+    } catch (error) {
+        console.error("Hata oluştu: ", error);
+        showAlert('<i class="fas fa-exclamation-triangle"></i> Hasta kaydedilirken bir hata oluştu: ' + error.message, 'danger');
+    }
+});
+
+// Form reset butonunu dinle
+document.querySelector('button[type="reset"]').addEventListener('click', function(e) {
+    e.preventDefault();
+    resetForm();
+});
+
+// Form temizleme fonksiyonu
+function resetForm() {
+    document.getElementById('patient-form').reset();
+    
+    // Tüm seçili butonları sıfırla
+    document.querySelectorAll('.tag-btn.selected').forEach(button => {
+        button.classList.remove('selected');
+    });
+    
+    showAlert('<i class="fas fa-check-circle"></i> Form temizlendi, hazır durumdadır.', 'success');
+}
+
+// Alert mesajı gösterme fonksiyonu
+function showAlert(message, type) {
+    const alertBox = document.getElementById('alert-box');
+    alertBox.className = `alert alert-${type}`;
+    alertBox.innerHTML = message;
+    alertBox.classList.remove('hidden');
+    
+    // 5 saniye sonra alert'i gizle
+    setTimeout(() => {
+        alertBox.classList.add('hidden');
+    }, 5000);
+}
+
+// Sayfa yüklendiğinde
+document.addEventListener('DOMContentLoaded', function() {
+    // Tüm kategorileri başlangıçta AÇ (collapsed class'ını KALDIRMA)
+    // Hiçbir şey yapma, hepsi açık kalsın
+    
+    // Protokol numarasını yükle
+    loadNextProtocolNumber();
+});
+
+// Protokol numarası yükleme fonksiyonu
+async function loadNextProtocolNumber() {
+    try {
+        const counterRef = db.collection('counters').doc('lokalPatientCounter');
+        const counterDoc = await counterRef.get();
+        
+        let nextNumber;
+        if (!counterDoc.exists) {
+            // Counter dökümanı yoksa 10417'den başlat
+            nextNumber = 10417;
+        } else {
+            // Varolan counter'ı kullan
+            nextNumber = counterDoc.data().value || 10417;
+        }
+        
+        document.getElementById('protokol').value = nextNumber;
+    } catch (error) {
+        console.error("Protokol numarası yüklenirken hata:", error);
+        showAlert('<i class="fas fa-exclamation-triangle"></i> Protokol numarası yüklenirken hata oluştu.', 'danger');
+    }
+}
+    </script>
+</body>
+</html>

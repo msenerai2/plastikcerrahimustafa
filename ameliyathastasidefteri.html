@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>AMELİYAT HASTALARI DEFTERİ</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e1e1e, #2d2d30);
+            font-family: 'Arial', sans-serif;
+            color: white;
+            padding: 6px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 100%;
+            background: rgba(23, 23, 23, 0.9);
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .title {
+            font-size: 1.4em;
+            background: linear-gradient(45deg, #ff2288, #387ef0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 3px;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            color: #ccc;
+            font-size: 0.75em;
+        }
+
+        .alert-message {
+            padding: 6px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.75em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .alert-success {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .alert-error {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 12px;
+            align-items: start;
+        }
+
+        .left-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: sticky;
+            top: 6px;
+            max-height: calc(100vh - 12px);
+            overflow-y: auto;
+        }
+
+        .left-sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .left-sidebar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+        }
+
+        .left-sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 34, 136, 0.5);
+            border-radius: 2px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(3px);
+        }
+
+        .stat-card.primary {
+            border-left: 3px solid #ff2288;
+        }
+
+        .stat-card.success {
+            border-left: 3px solid #1cc88a;
+        }
+
+        .stat-card.info {
+            border-left: 3px solid #36b9cc;
+        }
+
+        .stat-card.warning {
+            border-left: 3px solid #f6c23e;
+        }
+
+        .stat-card.called {
+            border-left: 3px solid #9b59b6;
+        }
+
+        .stat-card.cloudinary {
+            border-left: 3px solid #3448c5;
+        }
+
+        .stat-icon {
+            font-size: 1.3em;
+            opacity: 0.7;
+        }
+
+        .stat-content h3 {
+            font-size: 0.65em;
+            color: #ccc;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .stat-content .stat-value {
+            font-size: 1.3em;
+            font-weight: bold;
+        }
+
+        .usage-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+
+        .usage-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3448c5, #5568d3);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .usage-bar-fill.warning {
+            background: linear-gradient(90deg, #f6c23e, #dda20a);
+        }
+
+        .usage-bar-fill.danger {
+            background: linear-gradient(90deg, #f44336, #d32f2f);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-header {
+            font-size: 0.9em;
+            color: #ff2288;
+            margin-bottom: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255, 34, 136, 0.2);
+        }
+
+        .search-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .search-box {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 0.8em;
+            transition: all 300ms ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #ff2288;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 300ms ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #ff2288, #387ef0);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 34, 136, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, #f6c23e, #dda20a);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #1cc88a, #17a673);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-info {
+            background: linear-gradient(45deg, #36b9cc, #2c9faf);
+            color: white;
+        }
+
+        .btn-info:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 0.7em;
+        }
+
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+            font-size: 0.8em;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.2);
+            transition: .4s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background: linear-gradient(45deg, #ff2288, #387ef0);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+
+        .sort-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75em;
+        }
+
+        thead th {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ff2288;
+            padding: 6px 4px;
+            text-align: left;
+            font-weight: bold;
+            border-bottom: 2px solid rgba(255, 34, 136, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tbody td {
+            padding: 6px 4px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            text-transform: uppercase;
+            vertical-align: top;
+        }
+
+        tbody td.td-adsoyad {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px;
+        }
+
+        tbody td.td-tani {
+            max-width: 200px;
+            word-wrap: break-word;
+            white-space: normal;
+        }
+
+        tbody td.td-telefon {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 120px;
+        }
+
+        tbody td.td-not {
+            max-width: 250px;
+            word-wrap: break-word;
+            white-space: normal;
+        }
+
+        tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        tbody tr:nth-child(odd) {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        tbody tr:nth-child(even) {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.08) !important;
+        }
+
+        tbody tr.randevu-tarihi-var:nth-child(odd) {
+            background: rgba(56, 126, 240, 0.12);
+        }
+
+        tbody tr.randevu-tarihi-var:nth-child(even) {
+            background: rgba(56, 126, 240, 0.2);
+        }
+
+        tbody tr.randevu-tarihi-var:hover {
+            background: rgba(56, 126, 240, 0.3) !important;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 3px;
+            min-width: 180px;
+        }
+
+        .action-buttons .btn {
+            width: 100%;
+            min-width: unset;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-dialog {
+            background: rgba(23, 23, 23, 0.95);
+            border-radius: 8px;
+            padding: 12px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-dialog.fullscreen {
+            max-width: 95%;
+            width: 95%;
+            max-height: 95vh;
+            height: 95vh;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 34, 136, 0.2);
+        }
+
+        .modal-title {
+            font-size: 1.1em;
+            color: #ff2288;
+            font-weight: bold;
+        }
+
+        .btn-close {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .btn-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            margin-bottom: 12px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: bold;
+            color: #e0e0e0;
+            font-size: 0.8em;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        .iframe-container {
+            width: 100%;
+            height: calc(95vh - 100px);
+            border: none;
+            border-radius: 4px;
+            background: white;
+        }
+
+        .photo-upload-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .photo-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .photo-item:hover {
+            border-color: #ff2288;
+            transform: scale(1.05);
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        .photo-item .remove-photo {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(244, 67, 54, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.3s ease;
+            font-size: 0.8em;
+        }
+
+        .photo-item:hover .remove-photo {
+            opacity: 1;
+        }
+
+        .photo-item .remove-photo:hover {
+            background: rgba(211, 47, 47, 1);
+            transform: scale(1.1);
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8em;
+        }
+
+        .file-input-label:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .photos-thumbnail-container {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .photo-thumbnail {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .photo-thumbnail:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 12px rgba(255, 34, 136, 0.4);
+            z-index: 10;
+        }
+
+        .photo-modal-image {
+            width: 100%;
+            height: auto;
+            border-radius: 6px;
+        }
+
+        .photo-count-badge {
+            background: linear-gradient(45deg, #ff2288, #387ef0);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7em;
+            font-weight: bold;
+            display: inline-block;
+            margin-left: 4px;
+        }
+
+        .more-photos-btn {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 34, 136, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .more-photos-btn:hover {
+            transform: scale(1.2);
+            background: rgba(255, 34, 136, 1);
+            box-shadow: 0 4px 12px rgba(255, 34, 136, 0.4);
+        }
+
+        .all-photos-modal .modal-dialog {
+            max-width: 800px;
+        }
+
+        .all-photos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .all-photos-grid img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .all-photos-grid img:hover {
+            transform: scale(1.05);
+            border-color: #ff2288;
+            box-shadow: 0 4px 12px rgba(255, 34, 136, 0.4);
+        }
+
+        @media screen and (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .left-sidebar {
+                position: relative;
+                top: auto;
+                max-height: none;
+                order: 1;
+            }
+
+            .right-content {
+                order: 2;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 4px;
+            }
+
+            .container {
+                padding: 8px;
+            }
+
+            .title {
+                font-size: 1.2em;
+            }
+
+            .subtitle {
+                font-size: 0.7em;
+            }
+
+            table {
+                font-size: 0.7em;
+            }
+
+            thead th {
+                padding: 5px 3px;
+                font-size: 0.85em;
+            }
+
+            tbody td {
+                padding: 5px 3px;
+                word-break: break-word;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                min-width: 80px;
+            }
+
+            .action-buttons .btn {
+                width: 100%;
+                padding: 5px 6px;
+                font-size: 0.7em;
+            }
+
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+
+            thead {
+                display: none;
+            }
+
+            tbody tr {
+                margin-bottom: 12px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 6px;
+                padding: 8px;
+                background: rgba(255, 255, 255, 0.03);
+            }
+
+            tbody tr.randevu-tarihi-var {
+                background: rgba(56, 126, 240, 0.15);
+                border-color: rgba(56, 126, 240, 0.4);
+            }
+
+            tbody td {
+                padding: 4px 0;
+                border: none;
+                display: grid;
+                grid-template-columns: 100px 1fr;
+                gap: 8px;
+                text-align: left;
+                max-width: 100% !important;
+                white-space: normal !important;
+                overflow: visible !important;
+                text-overflow: clip !important;
+            }
+
+            tbody td::before {
+                content: attr(data-label);
+                font-weight: bold;
+                color: #ff2288;
+                text-transform: uppercase;
+                font-size: 0.75em;
+            }
+
+            tbody td:last-child {
+                grid-template-columns: 1fr;
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            tbody td:last-child::before {
+                display: none;
+            }
+
+            .action-buttons {
+                grid-template-columns: repeat(4, 1fr);
+                width: 100%;
+                gap: 4px;
+            }
+
+            .photo-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            body {
+                padding: 2px;
+            }
+
+            .container {
+                padding: 6px;
+                border-radius: 6px;
+            }
+
+            .title {
+                font-size: 1em;
+            }
+
+            .subtitle {
+                font-size: 0.65em;
+            }
+
+            table {
+                font-size: 0.65em;
+            }
+
+            .action-buttons .btn {
+                padding: 4px 5px;
+                font-size: 0.65em;
+            }
+
+            .photo-grid {
+                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">AMELİYAT HASTALARI DEFTERİ</h1>
+            <p class="subtitle">Hasta kayıtlarınızı yönetin ve takip edin - M. ŞENER</p>
+        </div>
+        
+        <div id="alert-box" class="hidden"></div>
+        
+        <div class="main-layout">
+            <div class="left-sidebar">
+                <div class="stat-card primary">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Toplam</h3>
+                        <div class="stat-value" id="toplam-hasta">0</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card success">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Randevulu</h3>
+                        <div class="stat-value" id="randevulu-hasta">0</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card info">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Bugün</h3>
+                        <div class="stat-value" id="bugunki-randevu">0</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card warning">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Bekleyen</h3>
+                        <div class="stat-value" id="bekleyen-hasta">0</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card called">
+                    <div class="stat-icon">
+                        <i class="fas fa-phone-volume"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Arandı</h3>
+                        <div class="stat-value" id="aranan-hasta">0</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card cloudinary">
+                    <div class="stat-icon">
+                        <i class="fas fa-cloud"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Cloudinary</h3>
+                        <div class="stat-value" id="cloudinary-usage">
+                            <span id="usage-count">0</span> / <span id="usage-limit">2500</span>
+                        </div>
+                        <div class="usage-bar">
+                            <div class="usage-bar-fill" id="usage-bar-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-search"></i> Arama
+                    </div>
+                    <div class="search-section">
+                        <div class="search-box">
+                            <input type="text" class="form-control" id="search-input" placeholder="Ad Soyad, Tanı, Not, Telefon...">
+                            <button class="btn btn-primary" id="search-button">
+                                <i class="fas fa-search"></i> Ara
+                            </button>
+                        </div>
+                        
+                        <div class="switch-container">
+                            <label class="switch">
+                                <input type="checkbox" id="hide-appointed-patients" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Randevulu Gizli</span>
+                        </div>
+                        
+                        <div class="switch-container">
+                            <label class="switch">
+                                <input type="checkbox" id="hide-called-patients" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Arananlar Gizli</span>
+                        </div>
+                        
+                        <div class="sort-buttons">
+                            <button class="btn btn-secondary btn-sm" id="sort-newest-first">
+                                <i class="fas fa-sort-amount-down"></i> Yeni→Eski
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="sort-oldest-first">
+                                <i class="fas fa-sort-amount-up"></i> Eski→Yeni
+                            </button>
+                            <button class="btn btn-info btn-sm" id="export-excel-button">
+                                <i class="fas fa-file-excel"></i> Excel İndir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-content">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-table"></i> Hasta Listesi
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Fotoğraflar</th>
+                                    <th>Tarih/Saat</th>
+                                    <th>Protokol</th>
+                                    <th>Adı Soyadı</th>
+                                    <th>Tanısı</th>
+                                    <th>Telefon</th>
+                                    <th>Notu</th>
+                                    <th>Randevu</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patients-table-body">
+                                <tr>
+                                    <td colspan="9" style="text-align: center; padding: 20px;">
+                                        <i class="fas fa-spinner fa-spin" style="font-size: 1.5em; color: #ff2288;"></i>
+                                        <p style="margin-top: 8px;">Yükleniyor...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal" id="editPatientModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h5 class="modal-title">Hastayı Düzenle</h5>
+                <button type="button" class="btn-close" onclick="closeModal('editPatientModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editPatientForm">
+                    <input type="hidden" id="edit-patient-id">
+                    
+                    <div class="form-group">
+                        <label>Hasta Fotoğrafları <span class="photo-count-badge" id="photo-count-badge">0</span></label>
+                        <div class="photo-upload-container">
+                            <div class="file-input-wrapper">
+                                <input type="file" id="edit-photo-input" accept="image/*" multiple>
+                                <label for="edit-photo-input" class="file-input-label">
+                                    <i class="fas fa-camera"></i> Fotoğraf Seç (Çoklu)
+                                </label>
+                            </div>
+                            <div class="photo-grid" id="photo-grid"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit-protokol">Protokol No</label>
+                        <input type="text" class="form-control" id="edit-protokol">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-adsoyad">Adı Soyadı</label>
+                        <input type="text" class="form-control" id="edit-adsoyad">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-tani">Tanısı</label>
+                        <input type="text" class="form-control" id="edit-tani">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-telefon">Telefon</label>
+                        <input type="text" class="form-control" id="edit-telefon" placeholder="05XX XXX XX XX">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-not">Hasta Notu</label>
+                        <textarea class="form-control" id="edit-not" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-randevutarihi">Randevu Tarihi</label>
+                        <input type="text" class="form-control" id="edit-randevutarihi" placeholder="GG/AA/YYYY SS:DD">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editPatientModal')">İptal</button>
+                <button type="button" class="btn btn-primary" id="save-edit-button">
+                    <i class="fas fa-save"></i> Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="photoModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h5 class="modal-title">Hasta Fotoğrafı</h5>
+                <button type="button" class="btn-close" onclick="closeModal('photoModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <img id="photo-modal-image" class="photo-modal-image" alt="Hasta Fotoğrafı">
+            </div>
+        </div>
+    </div>
+
+    <div class="modal all-photos-modal" id="allPhotosModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h5 class="modal-title">Tüm Fotoğraflar <span class="photo-count-badge" id="all-photos-count">0</span></h5>
+                <button type="button" class="btn-close" onclick="closeModal('allPhotosModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="all-photos-grid" id="all-photos-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="appointmentCalendarModal">
+        <div class="modal-dialog fullscreen">
+            <div class="modal-header">
+                <h5 class="modal-title">Randevu Takvimi</h5>
+                <button type="button" class="btn-close" onclick="closeModal('appointmentCalendarModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <iframe id="appointment-iframe" class="iframe-container" src=""></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCuMD2_NTb42XTrC_TvRPNCzQ__D7-ZDBY",
+            authDomain: "gcdbaaa.firebaseapp.com",
+            databaseURL: "https://gcdbaaa-default-rtdb.firebaseio.com",
+            projectId: "gcdbaaa",
+            storageBucket: "gcdbaaa.firebasestorage.app",
+            messagingSenderId: "740142411040",
+            appId: "1:740142411040:web:3535938c5a34d23e503b45",
+            measurementId: "G-N69CEGVF0Y"
+        };
+        
+        const CLOUDINARY_CONFIG = {
+            cloudName: 'djrtljbjc',
+            uploadPreset: 'hasta_fotograflari',
+            folder: 'ameliyat_hastalari',
+            monthlyLimit: 2500
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        let allPatients = [];
+        let currentSortOrder = 'newest-first';
+        let currentPhotos = [];
+        let newPhotoFiles = [];
+        
+        const patientsTableBody = document.getElementById('patients-table-body');
+        const searchInput = document.getElementById('search-input');
+        const searchButton = document.getElementById('search-button');
+        const hideAppointedCheckbox = document.getElementById('hide-appointed-patients');
+        const hideCalledCheckbox = document.getElementById('hide-called-patients');
+        const sortNewestFirstBtn = document.getElementById('sort-newest-first');
+        const sortOldestFirstBtn = document.getElementById('sort-oldest-first');
+        const exportExcelBtn = document.getElementById('export-excel-button');
+        const editPhotoInput = document.getElementById('edit-photo-input');
+        const photoGrid = document.getElementById('photo-grid');
+        const photoCountBadge = document.getElementById('photo-count-badge');
+        
+        async function fetchCloudinaryUsage() {
+            try {
+                const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/usage`, {
+                    headers: {
+                        'Authorization': 'Basic ' + btoa('740142411040:YOUR_API_SECRET')
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    updateCloudinaryDisplay(data.credits?.usage || 0);
+                } else {
+                    let totalPhotos = 0;
+                    allPatients.forEach(patient => {
+                        if (patient.photoUrls && Array.isArray(patient.photoUrls)) {
+                            totalPhotos += patient.photoUrls.length;
+                        }
+                    });
+                    updateCloudinaryDisplay(totalPhotos);
+                }
+            } catch (error) {
+                let totalPhotos = 0;
+                allPatients.forEach(patient => {
+                    if (patient.photoUrls && Array.isArray(patient.photoUrls)) {
+                        totalPhotos += patient.photoUrls.length;
+                    }
+                });
+                updateCloudinaryDisplay(totalPhotos);
+            }
+        }
+        
+        function updateCloudinaryDisplay(usage) {
+            const usageCount = document.getElementById('usage-count');
+            const usageLimit = document.getElementById('usage-limit');
+            const usageBarFill = document.getElementById('usage-bar-fill');
+            
+            usageCount.textContent = usage.toLocaleString('tr-TR');
+            usageLimit.textContent = CLOUDINARY_CONFIG.monthlyLimit.toLocaleString('tr-TR');
+            
+            const percentage = (usage / CLOUDINARY_CONFIG.monthlyLimit) * 100;
+            usageBarFill.style.width = percentage + '%';
+            
+            usageBarFill.classList.remove('warning', 'danger');
+            if (percentage >= 90) {
+                usageBarFill.classList.add('danger');
+            } else if (percentage >= 70) {
+                usageBarFill.classList.add('warning');
+            }
+        }
+        
+        function formatPhoneNumber(phoneNumber) {
+            if (!phoneNumber) return '';
+            const cleaned = phoneNumber.replace(/\D/g, '');
+            if (cleaned.length < 10) return cleaned;
+            return cleaned.replace(/(\d{1})(\d{3})(\d{3})(\d{2})(\d{2})/, "$1$2 $3 $4 $5");
+        }
+        
+        function showAlert(message, type) {
+            const alertBox = document.getElementById('alert-box');
+            alertBox.className = type === 'success' ? 'alert-message alert-success' : 'alert-message alert-error';
+            alertBox.innerHTML = message;
+            alertBox.classList.remove('hidden');
+            
+            setTimeout(() => {
+                alertBox.classList.add('hidden');
+            }, 5000);
+        }
+        
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+            if (modalId === 'appointmentCalendarModal') {
+                document.getElementById('appointment-iframe').src = '';
+            }
+            if (modalId === 'editPatientModal') {
+                currentPhotos = [];
+                newPhotoFiles = [];
+                photoGrid.innerHTML = '';
+                updatePhotoCount();
+            }
+        }
+        
+        async function uploadToCloudinary(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+            formData.append('folder', CLOUDINARY_CONFIG.folder);
+            
+            try {
+                const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Fotoğraf yüklenemedi');
+                }
+                
+                const data = await response.json();
+                return data.secure_url;
+            } catch (error) {
+                console.error('Cloudinary upload error:', error);
+                throw error;
+            }
+        }
+        
+        function updatePhotoCount() {
+            const totalPhotos = currentPhotos.length + newPhotoFiles.length;
+            photoCountBadge.textContent = totalPhotos;
+        }
+        
+        function renderPhotoGrid() {
+            photoGrid.innerHTML = '';
+            
+            currentPhotos.forEach((photoUrl, index) => {
+                const photoItem = document.createElement('div');
+                photoItem.className = 'photo-item';
+                photoItem.innerHTML = `
+                    <img src="${photoUrl}" alt="Hasta Fotoğrafı" onclick="showPhotoModal('${photoUrl}')">
+                    <button class="remove-photo" onclick="removeExistingPhoto(${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                photoGrid.appendChild(photoItem);
+            });
+            
+            newPhotoFiles.forEach((file, index) => {
+                const photoItem = document.createElement('div');
+                photoItem.className = 'photo-item';
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    photoItem.innerHTML = `
+                        <img src="${e.target.result}" alt="Yeni Fotoğraf" onclick="showPhotoModal('${e.target.result}')">
+                        <button class="remove-photo" onclick="removeNewPhoto(${index})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                };
+                reader.readAsDataURL(file);
+                photoGrid.appendChild(photoItem);
+            });
+            
+            updatePhotoCount();
+        }
+        
+        window.removeExistingPhoto = function(index) {
+            currentPhotos.splice(index, 1);
+            renderPhotoGrid();
+        };
+        
+        window.removeNewPhoto = function(index) {
+            newPhotoFiles.splice(index, 1);
+            renderPhotoGrid();
+        };
+        
+        editPhotoInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            
+            files.forEach(file => {
+                if (file.size > 10 * 1024 * 1024) {
+                    showAlert('<i class="fas fa-exclamation-triangle"></i> Fotoğraf boyutu 10MB\'dan küçük olmalıdır: ' + file.name, 'error');
+                    return;
+                }
+                newPhotoFiles.push(file);
+            });
+            
+            renderPhotoGrid();
+            editPhotoInput.value = '';
+        });
+        
+        function isPatientCalled(patient) {
+            if (!patient.not) return false;
+            const notLower = patient.not.toLowerCase();
+            return notLower.includes('hasta telefonunu açmiyor') || 
+                   notLower.includes('hasta telefonunu acmiyor') ||
+                   notLower.includes('meşgule atiyor') ||
+                   notLower.includes('mesgule atiyor');
+        }
+        
+        function exportToExcel() {
+            if (allPatients.length === 0) {
+                showAlert('<i class="fas fa-exclamation-triangle"></i> Dışa aktarılacak hasta bulunamadı.', 'error');
+                return;
+            }
+            
+            showAlert('<i class="fas fa-spinner fa-spin"></i> Excel dosyası hazırlanıyor...', 'success');
+            
+            const excelData = allPatients.map(patient => {
+                const photoUrls = patient.photoUrls && patient.photoUrls.length > 0 
+                    ? patient.photoUrls.join(', ') 
+                    : '';
+                
+                return {
+                    'Tarih/Saat': patient.tarihsaat ? formatFirebaseTimestamp(patient.tarihsaat) : '',
+                    'Protokol': patient.protokol || '',
+                    'Adı Soyadı': patient.adsoyad || '',
+                    'Tanısı': patient.tani || '',
+                    'Telefon': patient.telefon || '',
+                    'Notu': patient.not || '',
+                    'Randevu': patient.randevutarihi || '',
+                    'Fotoğraf Sayısı': patient.photoUrls ? patient.photoUrls.length : 0,
+                    'Fotoğraf URLleri': photoUrls
+                };
+            });
+            
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            ws['!cols'] = [
+                { wch: 20 },
+                { wch: 15 },
+                { wch: 25 },
+                { wch: 30 },
+                { wch: 15 },
+                { wch: 50 },
+                { wch: 20 },
+                { wch: 15 },
+                { wch: 80 }
+            ];
+            
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Hasta Listesi");
+            
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('tr-TR').replace(/\./g, '-');
+            const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }).replace(/:/g, '-');
+            const fileName = `Hasta_Listesi_${dateStr}_${timeStr}.xlsx`;
+            
+            XLSX.writeFile(wb, fileName);
+            showAlert('<i class="fas fa-check-circle"></i> Excel dosyası başarıyla indirildi!', 'success');
+        }
+        
+        function fetchPatients() {
+            db.collection("ameliyathastalari").get()
+                .then((querySnapshot) => {
+                    allPatients = [];
+                    querySnapshot.forEach((doc) => {
+                        const patientData = doc.data();
+                        patientData.id = doc.id;
+                        
+                        if (patientData.telefon) {
+                            patientData.formattedPhone = formatPhoneNumber(patientData.telefon);
+                        }
+                        
+                        allPatients.push(patientData);
+                    });
+                    
+                    sortPatients();
+                    updateStatistics(allPatients);
+                    fetchCloudinaryUsage();
+                })
+                .catch((error) => {
+                    console.error("Hata:", error);
+                    showAlert('<i class="fas fa-exclamation-triangle"></i> Hastalar yüklenirken hata oluştu: ' + error.message, 'error');
+                });
+        }
+        
+        function sortPatients() {
+            allPatients.sort((a, b) => {
+                const dateA = a.tarihsaat ? (a.tarihsaat.toDate ? a.tarihsaat.toDate() : new Date(a.tarihsaat)) : new Date(0);
+                const dateB = b.tarihsaat ? (b.tarihsaat.toDate ? b.tarihsaat.toDate() : new Date(b.tarihsaat)) : new Date(0);
+                
+                return currentSortOrder === 'newest-first' ? dateB - dateA : dateA - dateB;
+            });
+            
+            filterPatients();
+        }
+        
+        function filterPatients() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            const hideAppointed = hideAppointedCheckbox.checked;
+            const hideCalled = hideCalledCheckbox.checked;
+            
+            let filteredPatients = allPatients;
+            
+            if (searchTerm) {
+                filteredPatients = filteredPatients.filter(patient => {
+                    return (
+                        (patient.adsoyad && patient.adsoyad.toLowerCase().includes(searchTerm)) ||
+                        (patient.tani && patient.tani.toLowerCase().includes(searchTerm)) ||
+                        (patient.not && patient.not.toLowerCase().includes(searchTerm)) ||
+                        (patient.telefon && patient.telefon.toLowerCase().includes(searchTerm)) ||
+                        (patient.protokol && patient.protokol.toLowerCase().includes(searchTerm))
+                    );
+                });
+            }
+            
+            if (hideAppointed) {
+                filteredPatients = filteredPatients.filter(patient => {
+                    return !patient.randevutarihi || 
+                           (typeof patient.randevutarihi === 'string' && patient.randevutarihi.trim() === '') ||
+                           patient.randevutarihi === '';
+                });
+            }
+            
+            if (hideCalled) {
+                filteredPatients = filteredPatients.filter(patient => {
+                    return !isPatientCalled(patient);
+                });
+            }
+            
+            displayPatients(filteredPatients);
+        }
+        
+        function displayPatients(patients) {
+            patientsTableBody.innerHTML = '';
+            
+            if (patients.length === 0) {
+                patientsTableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px;">Hasta bulunamadı</td></tr>';
+                return;
+            }
+            
+            patients.forEach(patient => {
+                const row = document.createElement('tr');
+                
+                if (patient.randevutarihi && 
+                    typeof patient.randevutarihi === 'string' && 
+                    patient.randevutarihi.trim() !== '') {
+                    row.classList.add('randevu-tarihi-var');
+                }
+                
+                let photoCell = '';
+                if (patient.photoUrls && patient.photoUrls.length > 0) {
+                    photoCell = '<div class="photos-thumbnail-container">';
+                    
+                    const displayCount = Math.min(2, patient.photoUrls.length);
+                    for (let i = 0; i < displayCount; i++) {
+                        photoCell += `<img src="${patient.photoUrls[i]}" class="photo-thumbnail" onclick="showPhotoModal('${patient.photoUrls[i]}')" alt="Hasta">`;
+                    }
+                    
+                    if (patient.photoUrls.length > 2) {
+                        const remainingCount = patient.photoUrls.length - 2;
+                        photoCell += `<div class="more-photos-btn" onclick="showAllPhotos('${patient.id}')">+${remainingCount}</div>`;
+                    }
+                    
+                    photoCell += '</div>';
+                } else {
+                    photoCell = '<i class="fas fa-user" style="font-size: 1.5em; opacity: 0.3;"></i>';
+                }
+                
+                row.innerHTML = `
+                    <td data-label="Fotoğraflar" style="text-align: center;">${photoCell}</td>
+                    <td data-label="Tarih/Saat">${patient.tarihsaat ? formatFirebaseTimestamp(patient.tarihsaat) : '-'}</td>
+                    <td data-label="Protokol">${patient.protokol || '-'}</td>
+                    <td class="td-adsoyad" data-label="Adı Soyadı" title="${patient.adsoyad || '-'}">${patient.adsoyad || '-'}</td>
+                    <td class="td-tani" data-label="Tanısı">${patient.tani || '-'}</td>
+                    <td class="td-telefon" data-label="Telefon" style="text-transform: none;" title="${patient.formattedPhone || patient.telefon || '-'}">${patient.formattedPhone || patient.telefon || '-'}</td>
+                    <td class="td-not" data-label="Notu">${patient.not || '-'}</td>
+                    <td data-label="Randevu">${patient.randevutarihi || '-'}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-success btn-sm appointment-btn" data-id="${patient.id}" title="Randevu Ver">
+                                <i class="fas fa-calendar-plus"></i>
+                            </button>
+                            <button class="btn btn-warning btn-sm edit-btn" data-id="${patient.id}" title="Düzenle">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm delete-btn" data-id="${patient.id}" title="Sil">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button class="btn btn-secondary btn-sm called-btn" data-id="${patient.id}" title="Arandı">
+                                <i class="fas fa-phone"></i>
+                            </button>
+                            ${patient.randevutarihi && 
+                              typeof patient.randevutarihi === 'string' && 
+                              patient.randevutarihi.trim() !== '' ? 
+                                `<button class="btn btn-secondary btn-sm cancel-appointment-btn" data-id="${patient.id}" title="Randevu İptal">
+                                    <i class="fas fa-calendar-times"></i>
+                                </button>` : ''}
+                        </div>
+                    </td>
+                `;
+                
+                patientsTableBody.appendChild(row);
+            });
+            
+            addButtonEventListeners();
+        }
+        
+        window.showAllPhotos = function(patientId) {
+            const patient = allPatients.find(p => p.id === patientId);
+            if (!patient || !patient.photoUrls || patient.photoUrls.length === 0) return;
+            
+            const allPhotosGrid = document.getElementById('all-photos-grid');
+            const allPhotosCount = document.getElementById('all-photos-count');
+            
+            allPhotosCount.textContent = patient.photoUrls.length;
+            allPhotosGrid.innerHTML = '';
+            
+            patient.photoUrls.forEach(photoUrl => {
+                const img = document.createElement('img');
+                img.src = photoUrl;
+                img.alt = 'Hasta Fotoğrafı';
+                img.onclick = function() {
+                    showPhotoModal(photoUrl);
+                };
+                allPhotosGrid.appendChild(img);
+            });
+            
+            openModal('allPhotosModal');
+        };
+        
+        window.showPhotoModal = function(photoUrl) {
+            document.getElementById('photo-modal-image').src = photoUrl;
+            openModal('photoModal');
+        };
+        
+        function formatFirebaseTimestamp(timestamp) {
+            if (!timestamp) return '-';
+            
+            let date;
+            if (timestamp.toDate) {
+                date = timestamp.toDate();
+            } else if (typeof timestamp === 'string') {
+                date = new Date(timestamp);
+            } else {
+                return '-';
+            }
+            
+            return date.toLocaleString('tr-TR');
+        }
+        
+        function addButtonEventListeners() {
+            document.querySelectorAll('.appointment-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const patientId = this.getAttribute('data-id');
+                    openAppointmentCalendar(patientId);
+                });
+            });
+            
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const patientId = this.getAttribute('data-id');
+                    openEditModal(patientId);
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const patientId = this.getAttribute('data-id');
+                    deletePatient(patientId);
+                });
+            });
+            
+            document.querySelectorAll('.called-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const patientId = this.getAttribute('data-id');
+                    addCalledNote(patientId);
+                });
+            });
+            
+            document.querySelectorAll('.cancel-appointment-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const patientId = this.getAttribute('data-id');
+                    cancelAppointment(patientId);
+                });
+            });
+        }
+        
+        async function openAppointmentCalendar(patientId) {
+            const patient = allPatients.find(p => p.id === patientId);
+            if (!patient) return;
+            
+            showAlert('<i class="fas fa-spinner fa-spin"></i> Hasta bilgileri aktarılıyor...', 'success');
+            
+            try {
+                await db.collection("randevutakvimi2").doc("randevutakvimi2").set({
+                    protokol: patient.protokol || '',
+                    adsoyad: patient.adsoyad || '',
+                    tani: patient.tani || '',
+                    telefon: patient.telefon || '',
+                    not: patient.not || '',
+                    tarihsaat: patient.tarihsaat || null,
+                    transferDate: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                
+                showAlert('<i class="fas fa-check-circle"></i> Hasta bilgileri aktarıldı!', 'success');
+                
+                document.getElementById('appointment-iframe').src = 'randevutakvimi2.html';
+                openModal('appointmentCalendarModal');
+                
+            } catch (error) {
+                console.error("Hata:", error);
+                showAlert('<i class="fas fa-exclamation-triangle"></i> Hasta bilgileri aktarılırken hata oluştu.', 'error');
+            }
+        }
+        
+        function openEditModal(patientId) {
+            const patient = allPatients.find(p => p.id === patientId);
+            if (!patient) return;
+            
+            document.getElementById('edit-patient-id').value = patientId;
+            document.getElementById('edit-protokol').value = patient.protokol || '';
+            document.getElementById('edit-adsoyad').value = patient.adsoyad || '';
+            document.getElementById('edit-tani').value = patient.tani || '';
+            document.getElementById('edit-telefon').value = patient.telefon || '';
+            document.getElementById('edit-not').value = patient.not || '';
+            document.getElementById('edit-randevutarihi').value = patient.randevutarihi || '';
+            
+            currentPhotos = patient.photoUrls ? [...patient.photoUrls] : [];
+            newPhotoFiles = [];
+            renderPhotoGrid();
+            
+            openModal('editPatientModal');
+        }
+        
+        function deletePatient(patientId) {
+            if (!confirm("Bu hastayı silmek istediğinizden emin misiniz?")) {
+                return;
+            }
+            
+            showAlert('<i class="fas fa-spinner fa-spin"></i> Hasta siliniyor...', 'success');
+            
+            db.collection("ameliyathastalari").doc(patientId).delete()
+                .then(() => {
+                    showAlert('<i class="fas fa-check-circle"></i> Hasta başarıyla silindi!', 'success');
+                    fetchPatients();
+                })
+                .catch((error) => {
+                    console.error("Hata:", error);
+                    showAlert('<i class="fas fa-exclamation-triangle"></i> Hasta silinirken hata oluştu.', 'error');
+                });
+        }
+        
+        function cancelAppointment(patientId) {
+            if (!confirm("Bu hastanın randevusunu iptal etmek istediğinizden emin misiniz?")) {
+                return;
+            }
+            
+            showAlert('<i class="fas fa-spinner fa-spin"></i> Randevu iptal ediliyor...', 'success');
+            
+            db.collection("ameliyathastalari").doc(patientId).update({
+                randevutarihi: ""
+            })
+            .then(() => {
+                showAlert('<i class="fas fa-check-circle"></i> Randevu başarıyla iptal edildi!', 'success');
+                fetchPatients();
+            })
+            .catch((error) => {
+                console.error("Hata:", error);
+                showAlert('<i class="fas fa-exclamation-triangle"></i> Randevu iptal edilirken hata oluştu.', 'error');
+            });
+        }
+        
+        function addCalledNote(patientId) {
+            const patient = allPatients.find(p => p.id === patientId);
+            if (!patient) return;
+            
+            const now = new Date();
+            const dateStr = now.toLocaleString('tr-TR', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            const callNote = `\n\n${dateStr} TARİHİNDE ARANDI. HASTA TELEFONUNU AÇMIYOR VEYA MEŞGULE ATIYOR.`;
+            const currentNote = patient.not || '';
+            const updatedNote = currentNote + callNote;
+            
+            showAlert('<i class="fas fa-spinner fa-spin"></i> Arama notu ekleniyor...', 'success');
+            
+            db.collection("ameliyathastalari").doc(patientId).update({
+                not: updatedNote
+            })
+            .then(() => {
+                showAlert('<i class="fas fa-check-circle"></i> Arama notu başarıyla eklendi!', 'success');
+                fetchPatients();
+            })
+            .catch((error) => {
+                console.error("Hata:", error);
+                showAlert('<i class="fas fa-exclamation-triangle"></i> Arama notu eklenirken hata oluştu.', 'error');
+            });
+        }
+        
+        function updateStatistics(patients) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            document.getElementById('toplam-hasta').textContent = patients.length;
+            
+            const appointedPatients = patients.filter(p => 
+                p.randevutarihi && 
+                typeof p.randevutarihi === 'string' && 
+                p.randevutarihi.trim() !== ''
+            );
+            document.getElementById('randevulu-hasta').textContent = appointedPatients.length;
+            
+            const todayAppointments = appointedPatients.filter(p => {
+                if (!p.randevutarihi) return false;
+                const todayStr = today.toLocaleDateString('tr-TR');
+                return p.randevutarihi.includes(todayStr);
+            });
+            document.getElementById('bugunki-randevu').textContent = todayAppointments.length;
+            
+            const calledPatients = patients.filter(p => isPatientCalled(p));
+            document.getElementById('aranan-hasta').textContent = calledPatients.length;
+            
+            const bekleyenHasta = patients.length - appointedPatients.length - calledPatients.length;
+            document.getElementById('bekleyen-hasta').textContent = bekleyenHasta;
+        }
+        
+        function highlightActiveSort() {
+            sortNewestFirstBtn.classList.remove('btn-primary');
+            sortNewestFirstBtn.classList.add('btn-secondary');
+            sortOldestFirstBtn.classList.remove('btn-primary');
+            sortOldestFirstBtn.classList.add('btn-secondary');
+            
+            if (currentSortOrder === 'newest-first') {
+                sortNewestFirstBtn.classList.remove('btn-secondary');
+                sortNewestFirstBtn.classList.add('btn-primary');
+            } else {
+                sortOldestFirstBtn.classList.remove('btn-secondary');
+                sortOldestFirstBtn.classList.add('btn-primary');
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchPatients();
+            
+            searchButton.addEventListener('click', filterPatients);
+            
+            searchInput.addEventListener('keyup', function(event) {
+                if (event.key === 'Enter') {
+                    filterPatients();
+                }
+            });
+            
+            hideAppointedCheckbox.addEventListener('change', filterPatients);
+            hideCalledCheckbox.addEventListener('change', filterPatients);
+            
+            sortNewestFirstBtn.addEventListener('click', function() {
+                currentSortOrder = 'newest-first';
+                sortPatients();
+                highlightActiveSort();
+            });
+            
+            sortOldestFirstBtn.addEventListener('click', function() {
+                currentSortOrder = 'oldest-first';
+                sortPatients();
+                highlightActiveSort();
+            });
+            
+            exportExcelBtn.addEventListener('click', exportToExcel);
+            
+            document.getElementById('save-edit-button').addEventListener('click', async function() {
+                const patientId = document.getElementById('edit-patient-id').value;
+                
+                const updatedData = {
+                    protokol: document.getElementById('edit-protokol').value,
+                    adsoyad: document.getElementById('edit-adsoyad').value,
+                    tani: document.getElementById('edit-tani').value,
+                    telefon: document.getElementById('edit-telefon').value,
+                    not: document.getElementById('edit-not').value,
+                    randevutarihi: document.getElementById('edit-randevutarihi').value
+                };
+                
+                showAlert('<i class="fas fa-spinner fa-spin"></i> Hasta güncelleniyor...', 'success');
+                
+                try {
+                    if (newPhotoFiles.length > 0) {
+                        showAlert('<i class="fas fa-spinner fa-spin"></i> Fotoğraflar yükleniyor... (' + newPhotoFiles.length + ' adet)', 'success');
+                        
+                        const uploadPromises = newPhotoFiles.map(file => uploadToCloudinary(file));
+                        const uploadedUrls = await Promise.all(uploadPromises);
+                        
+                        currentPhotos = [...currentPhotos, ...uploadedUrls];
+                    }
+                    
+                    updatedData.photoUrls = currentPhotos;
+                    
+                    await db.collection("ameliyathastalari").doc(patientId).update(updatedData);
+                    closeModal('editPatientModal');
+                    showAlert('<i class="fas fa-check-circle"></i> Hasta başarıyla güncellendi!', 'success');
+                    fetchPatients();
+                } catch (error) {
+                    console.error("Hata:", error);
+                    showAlert('<i class="fas fa-exclamation-triangle"></i> Hasta güncellenirken hata oluştu.', 'error');
+                }
+            });
+            
+            highlightActiveSort();
+        });
+        
+        window.addEventListener('click', function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('show');
+                if (event.target.id === 'appointmentCalendarModal') {
+                    document.getElementById('appointment-iframe').src = '';
+                }
+                if (event.target.id === 'editPatientModal') {
+                    currentPhotos = [];
+                    newPhotoFiles = [];
+                    photoGrid.innerHTML = '';
+                    updatePhotoCount();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+                

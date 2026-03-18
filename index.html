@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tıbbi Yönetim Sistemi - Mustafa Sertaç Ocak</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1e1e1e, #2d2d30);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+            color: white;
+        }
+
+        .main-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .title {
+            font-size: 1.8em;
+            margin: 0;
+            background: linear-gradient(45deg, #ff2288, #387ef0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            cursor: pointer;
+            transition: transform 300ms ease;
+            flex: 1;
+            text-align: center;
+        }
+
+        .title:hover {
+            transform: scale(1.05);
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .nav-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 300ms ease;
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        .nav-icon:hover {
+            background: linear-gradient(45deg, #ff2288, #387ef0);
+            transform: scale(1.1);
+        }
+
+        .nav-icon .tooltip {
+            position: absolute;
+            bottom: -60px;
+            right: 0;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 300ms;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-icon:hover .tooltip {
+            opacity: 1;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 25px;
+            padding: 35px;
+            justify-items: center;
+            align-items: center;
+            flex: 1;
+        }
+
+        .card {
+            width: 252px;
+            height: 315px;
+            background: #171717;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0px 0px 18px 4px #00000088;
+            cursor: pointer;
+            border-radius: 15px;
+            transition: transform 300ms ease;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+        }
+
+        .card .content {
+            border-radius: 12px;
+            background: #171717;
+            width: 248px;
+            height: 311px;
+            z-index: 2;
+            padding: 25px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .card-title {
+            font-size: 19px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            line-height: 1.3;
+            z-index: 3;
+            position: relative;
+        }
+
+        .card-description {
+            font-size: 13px;
+            color: #ccc;
+            margin-bottom: 18px;
+            z-index: 3;
+            position: relative;
+        }
+
+        .card-icon {
+            font-size: 45px;
+            margin-bottom: 18px;
+            opacity: 0.9;
+            z-index: 3;
+            position: relative;
+        }
+
+        .card-bg-icon {
+            position: absolute;
+            font-size: 180px;
+            opacity: 0.1;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            color: white;
+            animation: rotation_bg 20000ms infinite linear;
+            animation-play-state: paused;
+        }
+
+        .card:hover .card-bg-icon {
+            animation-play-state: running;
+        }
+
+        @keyframes rotation_bg {
+            0% {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
+        .content::before {
+            opacity: 0;
+            transition: opacity 300ms;
+            content: " ";
+            display: block;
+            background: white;
+            width: 5px;
+            height: 45px;
+            position: absolute;
+            filter: blur(45px);
+            overflow: hidden;
+        }
+
+        .card:hover .content::before {
+            opacity: 1;
+        }
+
+        .card::before {
+            opacity: 0;
+            content: " ";
+            position: absolute;
+            display: block;
+            width: 72px;
+            height: 324px;
+            background: linear-gradient(#ff2288, #387ef0);
+            transition: opacity 300ms;
+            animation: rotation_9018 8000ms infinite linear;
+            animation-play-state: paused;
+        }
+
+        .card:hover::before {
+            opacity: 1;
+            animation-play-state: running;
+        }
+
+        .card::after {
+            position: absolute;
+            content: " ";
+            display: block;
+            width: 288px;
+            height: 360px;
+            background: #17171733;
+            backdrop-filter: blur(45px);
+        }
+
+        @keyframes rotation_9018 {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .iframe-container {
+            display: none;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .iframe-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .info-page {
+            display: none;
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .info-page.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .info-content {
+            max-width: 800px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-content h2 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #ff2288, #387ef0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .info-content .designer-info {
+            font-size: 1.3em;
+            text-align: center;
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+
+        .info-content .contact-info {
+            font-size: 1.5em;
+            text-align: center;
+            color: #387ef0;
+            margin-bottom: 40px;
+        }
+
+        .info-content .description {
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #ccc;
+            text-align: justify;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 18px;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .dashboard {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 18px;
+                padding: 27px;
+            }
+
+            .title {
+                font-size: 1.6em;
+            }
+
+            .card {
+                width: 225px;
+                height: 288px;
+            }
+
+            .card .content {
+                width: 221px;
+                height: 284px;
+            }
+
+            .info-content {
+                padding: 30px;
+            }
+
+            .info-content h2 {
+                font-size: 2em;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 13px;
+                padding: 18px;
+            }
+            
+            .card {
+                width: 180px;
+                height: 225px;
+            }
+            
+            .card .content {
+                width: 176px;
+                height: 221px;
+                padding: 18px;
+            }
+            
+            .card-bg-icon {
+                font-size: 108px;
+            }
+            
+            .title {
+                font-size: 1.5em;
+            }
+
+            .nav-icon {
+                width: 36px;
+                height: 36px;
+                font-size: 16px;
+            }
+
+            .header-nav {
+                gap: 8px;
+            }
+
+            .header {
+                padding: 10px 18px;
+            }
+
+            .info-content {
+                padding: 25px;
+            }
+
+            .info-content h2 {
+                font-size: 1.8em;
+            }
+
+            .info-content .designer-info {
+                font-size: 1.1em;
+            }
+
+            .info-content .contact-info {
+                font-size: 1.2em;
+            }
+
+            .info-content .description {
+                font-size: 1em;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .title {
+                font-size: 1.3em;
+            }
+
+            .nav-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+
+            .header-nav {
+                gap: 7px;
+            }
+
+            .card {
+                width: 153px;
+                height: 198px;
+            }
+
+            .card .content {
+                width: 149px;
+                height: 194px;
+                padding: 13px;
+            }
+
+            .card-icon {
+                font-size: 36px;
+                margin-bottom: 13px;
+            }
+
+            .card-title {
+                font-size: 16px;
+            }
+
+            .card-description {
+                font-size: 11px;
+            }
+
+            .card-bg-icon {
+                font-size: 90px;
+            }
+
+            .info-page {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                gap: 18px;
+                padding: 18px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 12px;
+                padding: 12px;
+            }
+
+            .title {
+                font-size: 1.4em;
+                text-align: center;
+            }
+
+            .header-nav {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .card {
+                width: 100%;
+                max-width: 270px;
+                height: 252px;
+                margin: 0 auto;
+            }
+
+            .card .content {
+                width: calc(100% - 4px);
+                height: calc(100% - 4px);
+                padding: 22px;
+            }
+
+            .card-icon {
+                font-size: 40px;
+            }
+
+            .card-title {
+                font-size: 18px;
+            }
+
+            .card-description {
+                font-size: 12px;
+            }
+
+            .card-bg-icon {
+                font-size: 126px;
+            }
+
+            .info-content h2 {
+                font-size: 1.5em;
+            }
+
+            .info-content .designer-info {
+                font-size: 1em;
+            }
+
+            .info-content .contact-info {
+                font-size: 1.1em;
+            }
+        }
+
+        @media (max-width: 390px) {
+            .title {
+                font-size: 1.2em;
+            }
+
+            .nav-icon {
+                width: 29px;
+                height: 29px;
+                font-size: 13px;
+            }
+
+            .header-nav {
+                gap: 5px;
+            }
+
+            .card {
+                height: 234px;
+            }
+
+            .card-icon {
+                font-size: 36px;
+                margin-bottom: 11px;
+            }
+
+            .card-title {
+                font-size: 16px;
+                margin-bottom: 9px;
+            }
+
+            .card-description {
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .title {
+                font-size: 1.1em;
+            }
+
+            .header {
+                padding: 10px;
+            }
+
+            .nav-icon {
+                width: 27px;
+                height: 27px;
+                font-size: 12px;
+            }
+
+            .card {
+                height: 216px;
+            }
+
+            .card .content {
+                padding: 18px;
+            }
+
+            .card-icon {
+                font-size: 32px;
+                margin-bottom: 9px;
+            }
+
+            .card-title {
+                font-size: 14px;
+                margin-bottom: 7px;
+            }
+
+            .card-description {
+                font-size: 10px;
+            }
+
+            .card-bg-icon {
+                font-size: 108px;
+            }
+
+            .info-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="content-area">
+            <div class="header">
+                <h1 class="title" onclick="showDashboard()">Tıbbi Yönetim Sistemi - Mustafa Sertaç Ocak</h1>
+                <div class="header-nav">
+                    <div class="nav-icon" onclick="openPage('lokalhastasiekleme.html')" title="Lokal Hastası Ekleme">👤</div>
+                    <div class="nav-icon" onclick="openPage('lokalhastasidefteri.html')" title="Lokal Hastası Defteri">📋</div>
+                    <div class="nav-icon" onclick="openPage('ameliyathastasiekleme.html')" title="Ameliyat Hastası Ekleme">⚕️</div>
+                    <div class="nav-icon" onclick="openPage('ameliyathastasidefteri.html')" title="Ameliyat Hastası Defteri">🏥</div>
+                    <div class="nav-icon" onclick="openPage('randevutakvimi.html')" title="Randevu Takvimi">📅</div>
+                    <div class="nav-icon" onclick="showInfo()">
+                        ℹ️
+                        <div class="tooltip">
+                            Tasarlayan: Mahmut Şener<br>
+                            İletişim: 0534 782 57 04
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="dashboard" class="dashboard">
+                <div class="card" onclick="openPage('lokalhastasiekleme.html')">
+                    <div class="card-bg-icon">👤</div>
+                    <div class="content">
+                        <div class="card-icon">👤</div>
+                        <div class="card-title">Lokal Hastası Ekleme</div>
+                        <div class="card-description">Yeni lokal hasta kaydı oluşturun</div>
+                    </div>
+                </div>
+
+                <div class="card" onclick="openPage('lokalhastasidefteri.html')">
+                    <div class="card-bg-icon">📋</div>
+                    <div class="content">
+                        <div class="card-icon">📋</div>
+                        <div class="card-title">Lokal Hastası Defteri</div>
+                        <div class="card-description">Lokal hasta kayıtlarını görüntüleyin</div>
+                    </div>
+                </div>
+
+                <div class="card" onclick="openPage('ameliyathastasiekleme.html')">
+                    <div class="card-bg-icon">⚕️</div>
+                    <div class="content">
+                        <div class="card-icon">⚕️</div>
+                        <div class="card-title">Ameliyat Hastası Ekleme</div>
+                        <div class="card-description">Yeni ameliyat hastası kaydı oluşturun</div>
+                    </div>
+                </div>
+
+                <div class="card" onclick="openPage('ameliyathastasidefteri.html')">
+                    <div class="card-bg-icon">🏥</div>
+                    <div class="content">
+                        <div class="card-icon">🏥</div>
+                        <div class="card-title">Ameliyat Hastası Defteri</div>
+                        <div class="card-description">Ameliyat hasta kayıtlarını görüntüleyin</div>
+                    </div>
+                </div>
+
+                <div class="card" onclick="openPage('randevutakvimi.html')">
+                    <div class="card-bg-icon">📅</div>
+                    <div class="content">
+                        <div class="card-icon">📅</div>
+                        <div class="card-title">Randevu Takvimi</div>
+                        <div class="card-description">Randevu planlaması ve takibi</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="iframe-container" class="iframe-container">
+                <iframe id="content-iframe" src="" frameborder="0"></iframe>
+            </div>
+
+            <div id="info-page" class="info-page">
+                <div class="info-content">
+                    <h2>Tıbbi Yönetim Sistemi Hakkında</h2>
+                    <div class="designer-info">
+                        <strong>Tasarlayan:</strong> Mahmut Şener
+                    </div>
+                    <div class="contact-info">
+                        📞 İletişim: 0534 782 57 04
+                    </div>
+                    <div class="description">
+                        <p>Bu Tıbbi Yönetim Sistemi, sağlık profesyonellerinin hasta kayıtlarını etkin bir şekilde yönetebilmeleri için tasarlanmış kapsamlı bir dijital çözümdür. Sistem, lokal ve ameliyat hastalarının kayıtlarını tutmak, randevu planlaması yapmak ve tüm süreçleri tek bir platformda yönetmek için geliştirilmiştir.</p>
+                        <br>
+                        <p><strong>Sistemin Özellikleri:</strong></p>
+                        <p>• Kullanıcı dostu arayüz ve modern tasarım</p>
+                        <p>• Lokal hasta kayıt sistemi</p>
+                        <p>• Ameliyat hasta takip modülü</p>
+                        <p>• Entegre randevu takvimi</p>
+                        <p>• Detaylı hasta defterleri ve raporlama</p>
+                        <p>• Güvenli veri saklama</p>
+                        <br>
+                        <p>Sistem, tıp profesyonellerinin iş akışlarını optimize etmek ve hasta bakım kalitesini artırmak amacıyla özenle tasarlanmıştır. Her modül, günlük klinik operasyonları desteklemek üzere pratik ve işlevsel bir şekilde düzenlenmiştir.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openPage(pageName) {
+            const dashboard = document.getElementById('dashboard');
+            const iframeContainer = document.getElementById('iframe-container');
+            const iframe = document.getElementById('content-iframe');
+            const infoPage = document.getElementById('info-page');
+            
+            dashboard.style.display = 'none';
+            iframeContainer.style.display = 'block';
+            infoPage.classList.remove('active');
+            iframe.src = pageName;
+        }
+
+        function showDashboard() {
+            const dashboard = document.getElementById('dashboard');
+            const iframeContainer = document.getElementById('iframe-container');
+            const iframe = document.getElementById('content-iframe');
+            const infoPage = document.getElementById('info-page');
+            
+            dashboard.style.display = 'grid';
+            iframeContainer.style.display = 'none';
+            infoPage.classList.remove('active');
+            iframe.src = '';
+        }
+
+        function showInfo() {
+            const dashboard = document.getElementById('dashboard');
+            const iframeContainer = document.getElementById('iframe-container');
+            const iframe = document.getElementById('content-iframe');
+            const infoPage = document.getElementById('info-page');
+            
+            dashboard.style.display = 'none';
+            iframeContainer.style.display = 'none';
+            infoPage.classList.add('active');
+            iframe.src = '';
+        }
+
+        window.addEventListener('message', function(event) {
+            if (event.data === 'goHome') {
+                showDashboard();
+            }
+        });
+    </script>
+</body>
+</html>
